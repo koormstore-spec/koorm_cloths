@@ -1,0 +1,1005 @@
+{
+  "note": "Replacement collection. Price and S?XXL sizes are temporary defaults; stock is zero pending confirmation. A 25% product discount is applied. No invented reviews.",
+  "products": [
+    {
+      "source_folder": "100% linen_light_pink",
+      "source_files": [
+        "0A0A0497.JPG",
+        "0A0A0499.JPG",
+        "0A0A0500.JPG",
+        "0A0A0506.JPG",
+        "0A0A0509.JPG",
+        "0A0A0510.JPG"
+      ],
+      "name": "Light Pink Linen Shirt",
+      "slug": "light-pink-linen-shirt",
+      "description": "Light Pink Linen Shirt in 100% linen. A light pink addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Light Pink"
+      ],
+      "images": [
+        "/images/collection-26/light-pink-linen-shirt/1.jpg",
+        "/images/collection-26/light-pink-linen-shirt/2.jpg",
+        "/images/collection-26/light-pink-linen-shirt/3.jpg",
+        "/images/collection-26/light-pink-linen-shirt/4.jpg",
+        "/images/collection-26/light-pink-linen-shirt/5.jpg",
+        "/images/collection-26/light-pink-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Aqua Blue Printed Shirt_100%_EROPIAN_Linen",
+      "source_files": [
+        "0A0A0651.JPG",
+        "0A0A0653.JPG",
+        "0A0A0657.JPG",
+        "0A0A0659.JPG",
+        "0A0A0661.JPG",
+        "0A0A0665.JPG"
+      ],
+      "name": "Aqua Blue Printed Linen Shirt",
+      "slug": "aqua-blue-printed-linen-shirt",
+      "description": "Aqua Blue Printed Linen Shirt in 100% European linen. A aqua blue addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Aqua Blue"
+      ],
+      "images": [
+        "/images/collection-26/aqua-blue-printed-linen-shirt/1.jpg",
+        "/images/collection-26/aqua-blue-printed-linen-shirt/2.jpg",
+        "/images/collection-26/aqua-blue-printed-linen-shirt/3.jpg",
+        "/images/collection-26/aqua-blue-printed-linen-shirt/4.jpg",
+        "/images/collection-26/aqua-blue-printed-linen-shirt/5.jpg",
+        "/images/collection-26/aqua-blue-printed-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Black Micro Print Shirt_cotton_100%",
+      "source_files": [
+        "0A0A0885.JPG",
+        "0A0A0887.JPG",
+        "0A0A0889.JPG",
+        "0A0A0894.JPG",
+        "0A0A0895.JPG",
+        "0A0A0899.JPG"
+      ],
+      "name": "Black Micro Print Cotton Shirt",
+      "slug": "black-micro-print-cotton-shirt",
+      "description": "Black Micro Print Cotton Shirt in 100% cotton. A black addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Black"
+      ],
+      "images": [
+        "/images/collection-26/black-micro-print-cotton-shirt/1.jpg",
+        "/images/collection-26/black-micro-print-cotton-shirt/2.jpg",
+        "/images/collection-26/black-micro-print-cotton-shirt/3.jpg",
+        "/images/collection-26/black-micro-print-cotton-shirt/4.jpg",
+        "/images/collection-26/black-micro-print-cotton-shirt/5.jpg",
+        "/images/collection-26/black-micro-print-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Blush Check_cotton",
+      "source_files": [
+        "0A0A0779.JPG",
+        "0A0A0780.JPG",
+        "0A0A0784.JPG",
+        "0A0A0788.JPG",
+        "0A0A0790.JPG",
+        "0A0A0795.JPG"
+      ],
+      "name": "Blush Check Cotton Shirt",
+      "slug": "blush-check-cotton-shirt",
+      "description": "Blush Check Cotton Shirt in cotton. A blush pink addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Blush Pink"
+      ],
+      "images": [
+        "/images/collection-26/blush-check-cotton-shirt/1.jpg",
+        "/images/collection-26/blush-check-cotton-shirt/2.jpg",
+        "/images/collection-26/blush-check-cotton-shirt/3.jpg",
+        "/images/collection-26/blush-check-cotton-shirt/4.jpg",
+        "/images/collection-26/blush-check-cotton-shirt/5.jpg",
+        "/images/collection-26/blush-check-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 1
+    },
+    {
+      "source_folder": "Burgundy Checked Shirt_twill",
+      "source_files": [
+        "0A0A0715.JPG",
+        "0A0A0716.JPG",
+        "0A0A0721.JPG",
+        "0A0A0723.JPG",
+        "0A0A0727.JPG",
+        "0A0A0729.JPG"
+      ],
+      "name": "Burgundy Check Twill Shirt",
+      "slug": "burgundy-check-twill-shirt",
+      "description": "Burgundy Check Twill Shirt in twill. A burgundy addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Burgundy"
+      ],
+      "images": [
+        "/images/collection-26/burgundy-check-twill-shirt/1.jpg",
+        "/images/collection-26/burgundy-check-twill-shirt/2.jpg",
+        "/images/collection-26/burgundy-check-twill-shirt/3.jpg",
+        "/images/collection-26/burgundy-check-twill-shirt/4.jpg",
+        "/images/collection-26/burgundy-check-twill-shirt/5.jpg",
+        "/images/collection-26/burgundy-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Charcoal Check_twill_cotton_check",
+      "source_files": [
+        "0A0A0901.JPG",
+        "0A0A0904.JPG",
+        "0A0A0906.JPG",
+        "0A0A0910.JPG",
+        "0A0A0913.JPG",
+        "0A0A0915.JPG"
+      ],
+      "name": "Charcoal Check Cotton Twill Shirt",
+      "slug": "charcoal-check-cotton-twill-shirt",
+      "description": "Charcoal Check Cotton Twill Shirt in cotton twill. A charcoal addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Charcoal"
+      ],
+      "images": [
+        "/images/collection-26/charcoal-check-cotton-twill-shirt/1.jpg",
+        "/images/collection-26/charcoal-check-cotton-twill-shirt/2.jpg",
+        "/images/collection-26/charcoal-check-cotton-twill-shirt/3.jpg",
+        "/images/collection-26/charcoal-check-cotton-twill-shirt/4.jpg",
+        "/images/collection-26/charcoal-check-cotton-twill-shirt/5.jpg",
+        "/images/collection-26/charcoal-check-cotton-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Charcoal Grey Shirt_oxford_shirts",
+      "source_files": [
+        "0A0A0699.JPG",
+        "0A0A0700.JPG",
+        "0A0A0703.JPG",
+        "0A0A0707.JPG",
+        "0A0A0708.JPG",
+        "0A0A0712.JPG"
+      ],
+      "name": "Charcoal Grey Oxford Shirt",
+      "slug": "charcoal-grey-oxford-shirt",
+      "description": "Charcoal Grey Oxford Shirt in Oxford weave. A charcoal grey addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Charcoal Grey"
+      ],
+      "images": [
+        "/images/collection-26/charcoal-grey-oxford-shirt/1.jpg",
+        "/images/collection-26/charcoal-grey-oxford-shirt/2.jpg",
+        "/images/collection-26/charcoal-grey-oxford-shirt/3.jpg",
+        "/images/collection-26/charcoal-grey-oxford-shirt/4.jpg",
+        "/images/collection-26/charcoal-grey-oxford-shirt/5.jpg",
+        "/images/collection-26/charcoal-grey-oxford-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 1
+    },
+    {
+      "source_folder": "cotton_linen_Light Blue Striped Shirt",
+      "source_files": [
+        "0A0A0615.JPG",
+        "0A0A0617.JPG",
+        "0A0A0619.JPG",
+        "0A0A0624.JPG",
+        "0A0A0626.JPG",
+        "0A0A0631.JPG"
+      ],
+      "name": "Light Blue Stripe Cotton Linen Shirt",
+      "slug": "light-blue-stripe-cotton-linen-shirt",
+      "description": "Light Blue Stripe Cotton Linen Shirt in cotton linen blend. A light blue addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Light Blue"
+      ],
+      "images": [
+        "/images/collection-26/light-blue-stripe-cotton-linen-shirt/1.jpg",
+        "/images/collection-26/light-blue-stripe-cotton-linen-shirt/2.jpg",
+        "/images/collection-26/light-blue-stripe-cotton-linen-shirt/3.jpg",
+        "/images/collection-26/light-blue-stripe-cotton-linen-shirt/4.jpg",
+        "/images/collection-26/light-blue-stripe-cotton-linen-shirt/5.jpg",
+        "/images/collection-26/light-blue-stripe-cotton-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "cotton_linen_Royal Blue Shirt",
+      "source_files": [
+        "0A0A0683.JPG",
+        "0A0A0686.JPG",
+        "0A0A0688.JPG",
+        "0A0A0692.JPG",
+        "0A0A0694.JPG",
+        "0A0A0696.JPG"
+      ],
+      "name": "Royal Blue Cotton Linen Shirt",
+      "slug": "royal-blue-cotton-linen-shirt",
+      "description": "Royal Blue Cotton Linen Shirt in cotton linen blend. A royal blue addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Royal Blue"
+      ],
+      "images": [
+        "/images/collection-26/royal-blue-cotton-linen-shirt/1.jpg",
+        "/images/collection-26/royal-blue-cotton-linen-shirt/2.jpg",
+        "/images/collection-26/royal-blue-cotton-linen-shirt/3.jpg",
+        "/images/collection-26/royal-blue-cotton-linen-shirt/4.jpg",
+        "/images/collection-26/royal-blue-cotton-linen-shirt/5.jpg",
+        "/images/collection-26/royal-blue-cotton-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Dark Chocolate Brown_100%_cotton",
+      "source_files": [
+        "0A0A0581.JPG",
+        "0A0A0582.JPG",
+        "0A0A0586.JPG",
+        "0A0A0590.JPG",
+        "0A0A0592.JPG",
+        "0A0A0595.JPG"
+      ],
+      "name": "Chocolate Brown Cotton Shirt",
+      "slug": "chocolate-brown-cotton-shirt",
+      "description": "Chocolate Brown Cotton Shirt in 100% cotton. A chocolate brown addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Chocolate Brown"
+      ],
+      "images": [
+        "/images/collection-26/chocolate-brown-cotton-shirt/1.jpg",
+        "/images/collection-26/chocolate-brown-cotton-shirt/2.jpg",
+        "/images/collection-26/chocolate-brown-cotton-shirt/3.jpg",
+        "/images/collection-26/chocolate-brown-cotton-shirt/4.jpg",
+        "/images/collection-26/chocolate-brown-cotton-shirt/5.jpg",
+        "/images/collection-26/chocolate-brown-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "dark_navy_100%_cotton",
+      "source_files": [
+        "0A0A0565.JPG",
+        "0A0A0567.JPG",
+        "0A0A0571.JPG",
+        "0A0A0573.JPG",
+        "0A0A0574.JPG",
+        "0A0A0576.JPG"
+      ],
+      "name": "Dark Navy Cotton Shirt",
+      "slug": "dark-navy-cotton-shirt",
+      "description": "Dark Navy Cotton Shirt in 100% cotton. A dark navy addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Dark Navy"
+      ],
+      "images": [
+        "/images/collection-26/dark-navy-cotton-shirt/1.jpg",
+        "/images/collection-26/dark-navy-cotton-shirt/2.jpg",
+        "/images/collection-26/dark-navy-cotton-shirt/3.jpg",
+        "/images/collection-26/dark-navy-cotton-shirt/4.jpg",
+        "/images/collection-26/dark-navy-cotton-shirt/5.jpg",
+        "/images/collection-26/dark-navy-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Eurp_100_{Rust_color}",
+      "source_files": [
+        "0A0A0478.JPG",
+        "0A0A0480.JPG",
+        "0A0A0481.JPG",
+        "0A0A0486.JPG",
+        "0A0A0489.JPG",
+        "0A0A0493.JPG"
+      ],
+      "name": "Rust European Linen Shirt",
+      "slug": "rust-european-linen-shirt",
+      "description": "Rust European Linen Shirt in 100% European linen. A rust addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Rust"
+      ],
+      "images": [
+        "/images/collection-26/rust-european-linen-shirt/1.jpg",
+        "/images/collection-26/rust-european-linen-shirt/2.jpg",
+        "/images/collection-26/rust-european-linen-shirt/3.jpg",
+        "/images/collection-26/rust-european-linen-shirt/4.jpg",
+        "/images/collection-26/rust-european-linen-shirt/5.jpg",
+        "/images/collection-26/rust-european-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 1
+    },
+    {
+      "source_folder": "light Pink Printed Shirt_cotton",
+      "source_files": [
+        "0A0A0731.JPG",
+        "0A0A0732.JPG",
+        "0A0A0736.JPG",
+        "0A0A0740.JPG",
+        "0A0A0741.JPG",
+        "0A0A0744.JPG"
+      ],
+      "name": "Light Pink Printed Cotton Shirt",
+      "slug": "light-pink-printed-cotton-shirt",
+      "description": "Light Pink Printed Cotton Shirt in cotton. A light pink addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Light Pink"
+      ],
+      "images": [
+        "/images/collection-26/light-pink-printed-cotton-shirt/1.jpg",
+        "/images/collection-26/light-pink-printed-cotton-shirt/2.jpg",
+        "/images/collection-26/light-pink-printed-cotton-shirt/3.jpg",
+        "/images/collection-26/light-pink-printed-cotton-shirt/4.jpg",
+        "/images/collection-26/light-pink-printed-cotton-shirt/5.jpg",
+        "/images/collection-26/light-pink-printed-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Monochrome Check_100%_cotton",
+      "source_files": [
+        "0A0A0829.JPG",
+        "0A0A0833.JPG",
+        "0A0A0837.JPG",
+        "0A0A0840.JPG",
+        "0A0A0844.JPG",
+        "0A0A0846.JPG"
+      ],
+      "name": "Monochrome Check Cotton Shirt",
+      "slug": "monochrome-check-cotton-shirt",
+      "description": "Monochrome Check Cotton Shirt in 100% cotton. A black & white addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Black & White"
+      ],
+      "images": [
+        "/images/collection-26/monochrome-check-cotton-shirt/1.jpg",
+        "/images/collection-26/monochrome-check-cotton-shirt/2.jpg",
+        "/images/collection-26/monochrome-check-cotton-shirt/3.jpg",
+        "/images/collection-26/monochrome-check-cotton-shirt/4.jpg",
+        "/images/collection-26/monochrome-check-cotton-shirt/5.jpg",
+        "/images/collection-26/monochrome-check-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "musturd_twill_checks",
+      "source_files": [
+        "0A0A0531.JPG",
+        "0A0A0532.JPG",
+        "0A0A0537.JPG",
+        "0A0A0540.JPG",
+        "0A0A0544.JPG",
+        "0A0A0547.JPG"
+      ],
+      "name": "Mustard Check Twill Shirt",
+      "slug": "mustard-check-twill-shirt",
+      "description": "Mustard Check Twill Shirt in twill. A mustard addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Mustard"
+      ],
+      "images": [
+        "/images/collection-26/mustard-check-twill-shirt/1.jpg",
+        "/images/collection-26/mustard-check-twill-shirt/2.jpg",
+        "/images/collection-26/mustard-check-twill-shirt/3.jpg",
+        "/images/collection-26/mustard-check-twill-shirt/4.jpg",
+        "/images/collection-26/mustard-check-twill-shirt/5.jpg",
+        "/images/collection-26/mustard-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "off-white_twill_checks",
+      "source_files": [
+        "0A0A0763.JPG",
+        "0A0A0765.JPG",
+        "0A0A0766.JPG",
+        "0A0A0771.JPG",
+        "0A0A0774.JPG",
+        "0A0A0777.JPG"
+      ],
+      "name": "Off White Check Twill Shirt",
+      "slug": "off-white-check-twill-shirt",
+      "description": "Off White Check Twill Shirt in twill. A off white addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Off White"
+      ],
+      "images": [
+        "/images/collection-26/off-white-check-twill-shirt/1.jpg",
+        "/images/collection-26/off-white-check-twill-shirt/2.jpg",
+        "/images/collection-26/off-white-check-twill-shirt/3.jpg",
+        "/images/collection-26/off-white-check-twill-shirt/4.jpg",
+        "/images/collection-26/off-white-check-twill-shirt/5.jpg",
+        "/images/collection-26/off-white-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "olive_green_linen_100%_EUROPIAN",
+      "source_files": [
+        "0A0A0598.JPG",
+        "0A0A0600.JPG",
+        "0A0A0604.JPG",
+        "0A0A0607.JPG",
+        "0A0A0610.JPG",
+        "0A0A0613.JPG"
+      ],
+      "name": "Olive Green European Linen Shirt",
+      "slug": "olive-green-european-linen-shirt",
+      "description": "Olive Green European Linen Shirt in 100% European linen. A olive green addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Olive Green"
+      ],
+      "images": [
+        "/images/collection-26/olive-green-european-linen-shirt/1.jpg",
+        "/images/collection-26/olive-green-european-linen-shirt/2.jpg",
+        "/images/collection-26/olive-green-european-linen-shirt/3.jpg",
+        "/images/collection-26/olive-green-european-linen-shirt/4.jpg",
+        "/images/collection-26/olive-green-european-linen-shirt/5.jpg",
+        "/images/collection-26/olive-green-european-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 1
+    },
+    {
+      "source_folder": "olive_green_twill_checks",
+      "source_files": [
+        "0A0A0549.JPG",
+        "0A0A0551.JPG",
+        "0A0A0556.JPG",
+        "0A0A0558.JPG",
+        "0A0A0559.JPG",
+        "0A0A0563.JPG"
+      ],
+      "name": "Olive Green Check Twill Shirt",
+      "slug": "olive-green-check-twill-shirt",
+      "description": "Olive Green Check Twill Shirt in twill. A olive green addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Olive Green"
+      ],
+      "images": [
+        "/images/collection-26/olive-green-check-twill-shirt/1.jpg",
+        "/images/collection-26/olive-green-check-twill-shirt/2.jpg",
+        "/images/collection-26/olive-green-check-twill-shirt/3.jpg",
+        "/images/collection-26/olive-green-check-twill-shirt/4.jpg",
+        "/images/collection-26/olive-green-check-twill-shirt/5.jpg",
+        "/images/collection-26/olive-green-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Petrol Blue_twill_check_shirt",
+      "source_files": [
+        "0A0A0667.JPG",
+        "0A0A0671.JPG",
+        "0A0A0673.JPG",
+        "0A0A0676.JPG",
+        "0A0A0679.JPG",
+        "0A0A0681.JPG"
+      ],
+      "name": "Petrol Blue Check Twill Shirt",
+      "slug": "petrol-blue-check-twill-shirt",
+      "description": "Petrol Blue Check Twill Shirt in twill. A petrol blue addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Petrol Blue"
+      ],
+      "images": [
+        "/images/collection-26/petrol-blue-check-twill-shirt/1.jpg",
+        "/images/collection-26/petrol-blue-check-twill-shirt/2.jpg",
+        "/images/collection-26/petrol-blue-check-twill-shirt/3.jpg",
+        "/images/collection-26/petrol-blue-check-twill-shirt/4.jpg",
+        "/images/collection-26/petrol-blue-check-twill-shirt/5.jpg",
+        "/images/collection-26/petrol-blue-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 1
+    },
+    {
+      "source_folder": "rust_oxford_shirt",
+      "source_files": [
+        "0A0A0512.JPG",
+        "0A0A0515.JPG",
+        "0A0A0519.JPG",
+        "0A0A0522.JPG",
+        "0A0A0523.JPG",
+        "0A0A0526.JPG"
+      ],
+      "name": "Rust Oxford Shirt",
+      "slug": "rust-oxford-shirt",
+      "description": "Rust Oxford Shirt in Oxford weave. A rust addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Rust"
+      ],
+      "images": [
+        "/images/collection-26/rust-oxford-shirt/1.jpg",
+        "/images/collection-26/rust-oxford-shirt/2.jpg",
+        "/images/collection-26/rust-oxford-shirt/3.jpg",
+        "/images/collection-26/rust-oxford-shirt/4.jpg",
+        "/images/collection-26/rust-oxford-shirt/5.jpg",
+        "/images/collection-26/rust-oxford-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 1
+    },
+    {
+      "source_folder": "Sand Beige_linen_100%",
+      "source_files": [
+        "0A0A0814.JPG",
+        "0A0A0816.JPG",
+        "0A0A0820.JPG",
+        "0A0A0823.JPG",
+        "0A0A0826.JPG",
+        "0A0A0828.JPG"
+      ],
+      "name": "Sand Beige Linen Shirt",
+      "slug": "sand-beige-linen-shirt",
+      "description": "Sand Beige Linen Shirt in 100% linen. A sand beige addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Sand Beige"
+      ],
+      "images": [
+        "/images/collection-26/sand-beige-linen-shirt/1.jpg",
+        "/images/collection-26/sand-beige-linen-shirt/2.jpg",
+        "/images/collection-26/sand-beige-linen-shirt/3.jpg",
+        "/images/collection-26/sand-beige-linen-shirt/4.jpg",
+        "/images/collection-26/sand-beige-linen-shirt/5.jpg",
+        "/images/collection-26/sand-beige-linen-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "Twill_checks_cheery_color",
+      "source_files": [
+        "0A0A0848.JPG",
+        "0A0A0850.JPG",
+        "0A0A0855.JPG",
+        "0A0A0857.JPG",
+        "0A0A0861.JPG",
+        "0A0A0865.JPG"
+      ],
+      "name": "Cherry Check Twill Shirt",
+      "slug": "cherry-check-twill-shirt",
+      "description": "Cherry Check Twill Shirt in twill. A cherry addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Cherry"
+      ],
+      "images": [
+        "/images/collection-26/cherry-check-twill-shirt/1.jpg",
+        "/images/collection-26/cherry-check-twill-shirt/2.jpg",
+        "/images/collection-26/cherry-check-twill-shirt/3.jpg",
+        "/images/collection-26/cherry-check-twill-shirt/4.jpg",
+        "/images/collection-26/cherry-check-twill-shirt/5.jpg",
+        "/images/collection-26/cherry-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "twill_check_ Rust Orange",
+      "source_files": [
+        "0A0A0868.JPG",
+        "0A0A0870.JPG",
+        "0A0A0872.JPG",
+        "0A0A0876.JPG",
+        "0A0A0879.JPG",
+        "0A0A0882.JPG"
+      ],
+      "name": "Rust Orange Check Twill Shirt",
+      "slug": "rust-orange-check-twill-shirt",
+      "description": "Rust Orange Check Twill Shirt in twill. A rust orange addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "Rust Orange"
+      ],
+      "images": [
+        "/images/collection-26/rust-orange-check-twill-shirt/1.jpg",
+        "/images/collection-26/rust-orange-check-twill-shirt/2.jpg",
+        "/images/collection-26/rust-orange-check-twill-shirt/3.jpg",
+        "/images/collection-26/rust-orange-check-twill-shirt/4.jpg",
+        "/images/collection-26/rust-orange-check-twill-shirt/5.jpg",
+        "/images/collection-26/rust-orange-check-twill-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "White Grey Stripe cotton",
+      "source_files": [
+        "0A0A0797.JPG",
+        "0A0A0800.JPG",
+        "0A0A0804.JPG",
+        "0A0A0806.JPG",
+        "0A0A0808.JPG",
+        "0A0A0811.JPG"
+      ],
+      "name": "White Grey Stripe Cotton Shirt",
+      "slug": "white-grey-stripe-cotton-shirt",
+      "description": "White Grey Stripe Cotton Shirt in cotton. A white & grey addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "White & Grey"
+      ],
+      "images": [
+        "/images/collection-26/white-grey-stripe-cotton-shirt/1.jpg",
+        "/images/collection-26/white-grey-stripe-cotton-shirt/2.jpg",
+        "/images/collection-26/white-grey-stripe-cotton-shirt/3.jpg",
+        "/images/collection-26/white-grey-stripe-cotton-shirt/4.jpg",
+        "/images/collection-26/white-grey-stripe-cotton-shirt/5.jpg",
+        "/images/collection-26/white-grey-stripe-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    },
+    {
+      "source_folder": "white_grey_100%_cotton",
+      "source_files": [
+        "0A0A0747.JPG",
+        "0A0A0749.JPG",
+        "0A0A0752.JPG",
+        "0A0A0757.JPG",
+        "0A0A0759.JPG",
+        "0A0A0761.JPG"
+      ],
+      "name": "White Grey Cotton Shirt",
+      "slug": "white-grey-cotton-shirt",
+      "description": "White Grey Cotton Shirt in 100% cotton. A white & grey addition to the Koorm collection, easy to pair with your everyday wardrobe. Explore all six photographs for a closer look at the fabric and styling.",
+      "price": 2499,
+      "discount_price": 1874.25,
+      "brand": "Koorm",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "colors": [
+        "White & Grey"
+      ],
+      "images": [
+        "/images/collection-26/white-grey-cotton-shirt/1.jpg",
+        "/images/collection-26/white-grey-cotton-shirt/2.jpg",
+        "/images/collection-26/white-grey-cotton-shirt/3.jpg",
+        "/images/collection-26/white-grey-cotton-shirt/4.jpg",
+        "/images/collection-26/white-grey-cotton-shirt/5.jpg",
+        "/images/collection-26/white-grey-cotton-shirt/6.jpg"
+      ],
+      "stock": 0,
+      "rating": 0,
+      "num_reviews": 0,
+      "is_featured": 0
+    }
+  ]
+}
