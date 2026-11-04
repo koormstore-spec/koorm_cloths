@@ -1,0 +1,54 @@
+# Koorm storefront — Apache config for Hostinger shared hosting.
+# Lives in client/public/ so every `vite build` copies it into dist/.
+
+# --- SPA routing -----------------------------------------------------------
+# React Router owns the URL. Serve real files as-is; send everything else to
+# index.html so deep links like /shop or /admin/login work on a refresh.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule . - [L]
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# --- Caching ---------------------------------------------------------------
+# Hashed asset filenames change on every build, so they can be cached forever.
+# index.html must never be cached or browsers keep loading the old bundle.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+<FilesMatch "\.(css|js|jpg|jpeg|png|webp|svg|woff2)$">
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+<FilesMatch "^index\.html$">
+  Header set Cache-Control "no-cache, must-revalidate"
+</FilesMatch>
+
+# --- Compression -----------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml
+</IfModule>
+
+# --- Security headers ------------------------------------------------------
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# Block access to any stray dotfile that lands in the web root.
+<FilesMatch "^\.(env|git)">
+  Require all denied
+</FilesMatch>
