@@ -14,6 +14,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLIENT_DIR="$REPO_ROOT/client/client"
 WORKTREE="$(mktemp -d)/deploytree"
 REMOTE="${REMOTE:-origin}"
+TARGET_BRANCH="deploy"
+# The build commit is assembled on a throwaway branch and pushed to
+# $TARGET_BRANCH by refspec, so a stale local `deploy` can never block a release.
+BUILD_BRANCH="deploy-build-$$"
 
 cd "$REPO_ROOT"
 
@@ -36,12 +40,17 @@ fi
 echo "==> Assembling deploy branch"
 cd "$REPO_ROOT"
 git worktree add --detach "$WORKTREE" HEAD -q
-trap 'git worktree remove --force "$WORKTREE" 2>/dev/null || true' EXIT
+cleanup() {
+  git worktree remove --force "$WORKTREE" 2>/dev/null || true
+  git branch -D "$BUILD_BRANCH" 2>/dev/null || true
+  git worktree prune 2>/dev/null || true
+}
+trap cleanup EXIT
 
 cd "$WORKTREE"
-git checkout --orphan deploy -q
+git checkout --orphan "$BUILD_BRANCH" -q
 git rm -rq --cached .
-rm -rf client server .gitignore scripts
+rm -rf client server .gitignore scripts DEPLOY.md
 cp -r "$CLIENT_DIR/dist/." .
 
 # Nothing but the built site belongs here.
@@ -52,9 +61,13 @@ fi
 
 git add -A
 git commit -q -m "Build output for Hostinger Git deploy (from $SOURCE_COMMIT)"
-echo "==> Force-pushing $REMOTE/deploy"
-git push --force -u "$REMOTE" deploy
+
+BUNDLE="$(grep -o 'index-[A-Za-z0-9_-]*\.js' index.html | head -1)"
+echo "==> Force-pushing $REMOTE/$TARGET_BRANCH ($BUNDLE)"
+git push --force "$REMOTE" "HEAD:refs/heads/$TARGET_BRANCH"
 
 echo
-echo "Done. deploy branch now holds the build from $SOURCE_COMMIT."
-echo "Trigger the pull in hPanel > Advanced > Git, then hard-reload the site."
+echo "Done. $TARGET_BRANCH now holds the build from $SOURCE_COMMIT."
+echo "Trigger the pull in hPanel > Advanced > Git, then hard-reload and check:"
+echo "  curl -s https://koormcollection.com | grep -o 'index-[A-Za-z0-9_-]*\.js'"
+echo "  expected: $BUNDLE"
