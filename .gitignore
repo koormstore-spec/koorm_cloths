@@ -12,6 +12,7 @@ out/
 .env.*
 !.env.example
 !.env.liveapi
+!.env.production
 
 # Logs
 logs/
@@ -36,3 +37,6 @@ coverage/
 Thumbs.db
 desktop.ini
 *.swp
+
+# Catalogue backups written by utils/replaceCollection.cjs
+server/server/backups/

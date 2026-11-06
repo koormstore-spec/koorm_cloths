@@ -37,6 +37,11 @@ if [ ! -f dist/.htaccess ]; then
   exit 1
 fi
 
+if grep -q 'localhost:5000' dist/assets/index-*.js || ! grep -q 'accessback.koormcollection.in' dist/assets/index-*.js; then
+  echo "The bundle is not pointing at the production API. Check client/client/.env.production." >&2
+  exit 1
+fi
+
 echo "==> Assembling deploy branch"
 cd "$REPO_ROOT"
 git worktree add --detach "$WORKTREE" HEAD -q

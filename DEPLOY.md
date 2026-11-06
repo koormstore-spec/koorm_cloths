@@ -61,6 +61,12 @@ Verify with a hard reload, and confirm the bundle hash changed:
 curl -s https://koormcollection.com | grep -o 'index-[A-Za-z0-9_-]*\.js'
 ```
 
+### API address
+
+`client/client/.env.production` sets `VITE_API_URL`, which is compiled into the
+bundle. Without it the build silently targets `http://localhost:5000/api`, so
+`scripts/release.sh` refuses to publish a bundle that does.
+
 ### `.htaccess`
 
 `client/client/public/.htaccess` is copied into `dist/` by every build. It
@@ -99,6 +105,7 @@ live means swapping in the `rzp_live_` pair, creating a **live-mode** webhook
 
 ## Secrets
 
-Never commit a real value to `.env.example`; it is a template and this repo is
-public. The MySQL password that was committed in `4879c02` is still in this
-repo's history — it is burned and must not be reused.
+Never commit a real value to `.env.example` or use one as a fallback in code;
+this repo is public. A MySQL password was committed in `.env.example`,
+`config/db.js` and `config/databaseInit.js`. It remains in this repo's history,
+so it is burned and must not be reused.

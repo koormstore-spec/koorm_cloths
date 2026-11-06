@@ -1,5 +1,13 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { existsSync } = require('node:fs');
+
+// The client sits beside the server, either flat (client/) or nested (client/client/).
+const DEFAULT_IMAGE_ROOTS = [
+  path.join(__dirname, '../../client/public/images'),
+  path.join(__dirname, '../../../client/client/public/images'),
+];
+const defaultImageRoot = () => DEFAULT_IMAGE_ROOTS.find((root) => existsSync(root)) || DEFAULT_IMAGE_ROOTS[0];
 
 const IMAGE_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
 const isWithin = (root, file) => {
@@ -27,7 +35,7 @@ const resolveImage = async (source, index) => {
   if (imagePath.includes('\\') || imagePath.includes('\0')) return {};
   const contentType = IMAGE_TYPES[path.extname(imagePath).toLowerCase()];
   if (!contentType) return {};
-  const root = path.resolve(process.env.EMAIL_IMAGE_ROOT || path.join(__dirname, '../../client/public/images'));
+  const root = path.resolve(process.env.EMAIL_IMAGE_ROOT || defaultImageRoot());
   const file = path.resolve(root, imagePath);
   if (!isWithin(root, file)) return {};
 

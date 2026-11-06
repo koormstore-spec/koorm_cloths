@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
 import api from '../api/axios';
+import { SESSION_EXPIRED_EVENT } from '../lib/sessionEvents';
 
 vi.mock('../api/axios', () => ({
   default: { post: vi.fn() },
@@ -108,5 +109,15 @@ describe('AuthContext', () => {
 
     await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('anonymous'));
     expect(localStorage.getItem('koorm_user')).toBeNull();
+  });
+
+  it('shows the visitor as signed out when the server rejects the saved login', () => {
+    localStorage.setItem('koorm_user', JSON.stringify({ email: 'jane@example.com', token: 'old-token' }));
+    renderWithProvider();
+    expect(screen.getByTestId('user')).toHaveTextContent('jane@example.com');
+
+    act(() => { window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT)); });
+
+    expect(screen.getByTestId('user')).toHaveTextContent('anonymous');
   });
 });

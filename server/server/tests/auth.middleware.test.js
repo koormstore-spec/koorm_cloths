@@ -51,6 +51,19 @@ describe('protect (customer auth)', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it('does not report a database failure as a rejected login', async () => {
+    pool.query.mockRejectedValueOnce(new Error('connection lost'));
+    const token = jwt.sign({ id: 1 }, process.env.JWT_SECRET);
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = mockRes();
+    const next = jest.fn();
+
+    await protect(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it('rejects a valid token when the user no longer exists', async () => {
     pool.query.mockResolvedValueOnce([[]]);
     const token = jwt.sign({ id: 99 }, process.env.JWT_SECRET);

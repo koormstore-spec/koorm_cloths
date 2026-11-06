@@ -9,7 +9,12 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Not authorized, token failed' });
+    }
 
     const user = await userModel.findById(decoded.id);
     if (!user) {
@@ -18,7 +23,9 @@ const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Not authorized, token failed' });
+    // A database problem says nothing about the login, so don't report it as a
+    // 401: the storefront signs the customer out on those.
+    return res.status(503).json({ message: 'Could not check your login. Please try again.' });
   }
 };
 

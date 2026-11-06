@@ -10,7 +10,7 @@ import { SearchIcon, HeartIcon, BagIcon, UserIcon, MenuIcon, CloseIcon, ChevronR
 
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
-  { label: 'New in1', to: '/shop?sort=newest' },
+  { label: 'New in', to: '/shop?sort=newest' },
   { label: 'Explore', to: '/shop' },
   { label: 'About', to: '/about' },
   { label: 'Sale', to: '/shop?sale=true' },

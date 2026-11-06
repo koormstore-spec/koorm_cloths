@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import api from '../api/axios';
+import { SESSION_EXPIRED_EVENT } from '../lib/sessionEvents';
 
 const AuthContext = createContext(null);
 
@@ -8,6 +9,13 @@ export const AuthProvider = ({ children }) => {
     const stored = localStorage.getItem('koorm_user');
     return stored ? JSON.parse(stored) : null;
   });
+
+  // The API client clears a login the server rejects; reflect that on screen.
+  useEffect(() => {
+    const signOut = () => setUser(null);
+    window.addEventListener(SESSION_EXPIRED_EVENT, signOut);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, signOut);
+  }, []);
 
   const setSession = (data) => {
     localStorage.setItem('koorm_user', JSON.stringify(data));
