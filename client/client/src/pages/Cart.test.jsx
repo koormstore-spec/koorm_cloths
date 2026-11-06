@@ -50,6 +50,16 @@ it('disables increasing quantity once it reaches the stock limit, without showin
   expect(screen.getByRole('button', { name: 'Increase quantity' })).toBeDisabled();
 });
 
+it('counts every size of a product against the stock they share', () => {
+  setup([
+    { ...baseItem, id: 1, size: 'M', quantity: 2, stock: 3 },
+    { ...baseItem, id: 2, size: 'L', quantity: 1, stock: 3 },
+  ]);
+  for (const button of screen.getAllByRole('button', { name: 'Increase quantity' })) {
+    expect(button).toBeDisabled();
+  }
+});
+
 it('increases quantity when stock allows it', () => {
   setup([{ ...baseItem, quantity: 1, stock: 5 }]);
   fireEvent.click(screen.getByRole('button', { name: 'Increase quantity' }));
@@ -83,6 +93,27 @@ it('does not cap a different product even if combined with this one it would exc
   for (const button of screen.getAllByRole('button', { name: 'Increase quantity' })) {
     expect(button).toBeEnabled();
   }
+});
+
+it('decreases quantity without removing the item while more than one is in the bag', () => {
+  setup([{ ...baseItem, quantity: 2, stock: 5 }]);
+  fireEvent.click(screen.getByRole('button', { name: 'Decrease quantity' }));
+  expect(updateQuantity).toHaveBeenCalledWith(1, 1);
+  expect(removeFromCart).not.toHaveBeenCalled();
+});
+
+it('removes the item when the minus button is pressed at quantity 1', () => {
+  setup([{ ...baseItem, quantity: 1, stock: 5 }]);
+  fireEvent.click(screen.getByRole('button', { name: 'Decrease quantity and remove item' }));
+  expect(removeFromCart).toHaveBeenCalledWith(1);
+  expect(updateQuantity).not.toHaveBeenCalled();
+});
+
+it('shows an error if removing the item at quantity 1 fails', async () => {
+  setup([{ ...baseItem, quantity: 1, stock: 5 }]);
+  removeFromCart.mockRejectedValueOnce({ response: { data: { message: 'Could not remove this item' } } });
+  fireEvent.click(screen.getByRole('button', { name: 'Decrease quantity and remove item' }));
+  expect(await screen.findByText('Could not remove this item')).toBeInTheDocument();
 });
 
 it('shows the server\'s stock message when increasing quantity is rejected', async () => {

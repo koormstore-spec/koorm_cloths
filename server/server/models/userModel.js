@@ -24,7 +24,7 @@ const update = async (id, { name, phone }) => {
 
 const updateVerificationCode = async (id, codeHash, expiry) => {
   await pool.query(
-    'UPDATE users SET verification_code = ?, verification_code_expiry = ? WHERE id = ?',
+    'UPDATE users SET verification_code = ?, verification_code_expiry = ?, verification_attempts = 0 WHERE id = ?',
     [codeHash, expiry, id]
   );
 };
@@ -40,14 +40,36 @@ const findByVerificationCode = async (email, codeHash) => {
 
 const markVerified = async (id) => {
   await pool.query(
-    'UPDATE users SET is_verified = 1, verification_code = NULL, verification_code_expiry = NULL WHERE id = ?',
+    'UPDATE users SET is_verified = 1, verification_code = NULL, verification_code_expiry = NULL, verification_attempts = 0 WHERE id = ?',
     [id]
   );
 };
 
+// Counts a guess before the code is compared. The update is atomic, so guesses
+// sent at the same moment can't get past the limit. False means there is no
+// live code or its attempts are used up.
+const recordCodeAttempt = async (email, maxAttempts) => {
+  const [result] = await pool.query(
+    `UPDATE users SET verification_attempts = verification_attempts + 1
+     WHERE email = ? AND verification_code IS NOT NULL AND verification_attempts < ?`,
+    [email, maxAttempts]
+  );
+  return result.affectedRows === 1;
+};
+
+// Returns true when this wrong guess used the last attempt and the code was cancelled.
+const cancelCodeIfAttemptsUsed = async (email, maxAttempts) => {
+  const [result] = await pool.query(
+    `UPDATE users SET verification_code = NULL, verification_code_expiry = NULL
+     WHERE email = ? AND verification_code IS NOT NULL AND verification_attempts >= ?`,
+    [email, maxAttempts]
+  );
+  return result.affectedRows > 0;
+};
+
 const clearVerificationCode = async (id) => {
   await pool.query(
-    'UPDATE users SET verification_code = NULL, verification_code_expiry = NULL WHERE id = ?',
+    'UPDATE users SET verification_code = NULL, verification_code_expiry = NULL, verification_attempts = 0 WHERE id = ?',
     [id]
   );
 };
@@ -60,5 +82,7 @@ module.exports = {
   updateVerificationCode,
   findByVerificationCode,
   markVerified,
+  recordCodeAttempt,
+  cancelCodeIfAttemptsUsed,
   clearVerificationCode,
 };

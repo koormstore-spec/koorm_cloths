@@ -72,6 +72,12 @@ export default function Checkout() {
 
   // Only the address, coupon and chosen method are sent. The server works out
   // the amount from the bag and creates the Razorpay order for exactly that sum.
+  // Runs after the order exists, so a failed refresh must never stop the customer
+  // reaching their confirmation. The bag catches up on the next page load.
+  const refreshBagAfterOrder = async () => {
+    try { await refreshCart(); } catch { /* the order is already placed */ }
+  };
+
   const placeOrder = async (event) => {
     event.preventDefault();
     if (editingItem !== null || applyingCoupon || placing) return;
@@ -85,7 +91,7 @@ export default function Checkout() {
       return;
     }
     if (!data.payment) {
-      await refreshCart();
+      await refreshBagAfterOrder();
       navigate(`/orders/${data.id}`, { state: { justPlaced: true } });
       return;
     }
@@ -93,12 +99,13 @@ export default function Checkout() {
     // payment window, continue on the order page (where payment can be retried).
     try {
       await payForOrder(data.id, data.payment);
-      await refreshCart();
-      navigate(`/orders/${data.id}`, { state: { justPlaced: true } });
     } catch (err) {
-      if (err.confirming) await refreshCart();
+      if (err.confirming) await refreshBagAfterOrder();
       navigate(`/orders/${data.id}`, { state: { paymentIssue: err.response?.data?.message || err.message, confirming: Boolean(err.confirming) } });
+      return;
     }
+    await refreshBagAfterOrder();
+    navigate(`/orders/${data.id}`, { state: { justPlaced: true } });
   };
 
   return (

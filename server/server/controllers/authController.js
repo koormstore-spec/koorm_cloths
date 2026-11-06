@@ -8,6 +8,18 @@ const VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const generateVerificationCode = () => String(crypto.randomInt(0, 1000000)).padStart(6, '0');
 
+// A 6-digit code can be guessed, so a code is cancelled after a few wrong tries.
+const MAX_CODE_ATTEMPTS = 5;
+const TOO_MANY_ATTEMPTS = 'Too many incorrect codes. Please request a new code.';
+
+const checkVerificationCode = async (email, code) => {
+  const allowed = await userModel.recordCodeAttempt(email, MAX_CODE_ATTEMPTS);
+  if (!allowed) return {};
+  const user = await userModel.findByVerificationCode(email, hashToken(String(code)));
+  if (user) return { user };
+  return { locked: await userModel.cancelCodeIfAttemptsUsed(email, MAX_CODE_ATTEMPTS) };
+};
+
 const issueVerificationCode = async (userId) => {
   const code = generateVerificationCode();
   const codeExpiry = new Date(Date.now() + VERIFICATION_CODE_TTL_MS);
@@ -59,7 +71,8 @@ const verifyEmail = async (req, res) => {
       return res.status(400).json({ message: 'Email and code are required' });
     }
 
-    const user = await userModel.findByVerificationCode(email, hashToken(code));
+    const { user, locked } = await checkVerificationCode(email, code);
+    if (locked) return res.status(429).json({ message: TOO_MANY_ATTEMPTS });
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired verification code' });
     }
@@ -149,7 +162,8 @@ const verifyLoginCode = async (req, res) => {
       return res.status(400).json({ message: 'Email and code are required' });
     }
 
-    const user = await userModel.findByVerificationCode(email, hashToken(code));
+    const { user, locked } = await checkVerificationCode(email, code);
+    if (locked) return res.status(429).json({ message: TOO_MANY_ATTEMPTS });
     if (!user) {
       return res.status(401).json({ message: 'Invalid or expired code' });
     }

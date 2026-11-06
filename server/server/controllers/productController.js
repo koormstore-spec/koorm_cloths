@@ -205,6 +205,10 @@ const createProduct = async (req, res) => {
   }
 };
 
+// MySQL hands JSON columns back as arrays and MariaDB as text; both must be
+// written back as text or the update fails when these fields are left out.
+const toJsonColumn = (value) => (typeof value === 'string' ? value : JSON.stringify(value ?? []));
+
 const updateProduct = async (req, res) => {
   try {
     const existing = await pool.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
@@ -225,13 +229,14 @@ const updateProduct = async (req, res) => {
         slug ?? current.slug,
         description ?? current.description,
         price ?? current.price,
-        discount_price ?? current.discount_price,
+        // Leaving the field out keeps the sale price; sending it empty removes it.
+        discount_price !== undefined ? (discount_price || null) : current.discount_price,
         category_id ?? current.category_id,
         brand ?? current.brand,
         gender ?? current.gender,
-        sizes ? JSON.stringify(sizes) : current.sizes,
-        colors ? JSON.stringify(colors) : current.colors,
-        images ? JSON.stringify(images) : current.images,
+        sizes ? JSON.stringify(sizes) : toJsonColumn(current.sizes),
+        colors ? JSON.stringify(colors) : toJsonColumn(current.colors),
+        images ? JSON.stringify(images) : toJsonColumn(current.images),
         stock ?? current.stock,
         is_featured !== undefined ? (is_featured ? 1 : 0) : current.is_featured,
         req.params.id,

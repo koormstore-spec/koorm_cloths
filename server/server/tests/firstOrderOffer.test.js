@@ -28,7 +28,7 @@ test.each([false, true])('checkout rechecks eligibility inside the transaction: 
     if (sql.includes('FROM coupons')) return [[coupon]];
     if (sql.includes('FROM users')) return [[{ id: user.id }]];
     if (sql.includes('FROM orders')) return [hasPrevious ? [{ id: 77 }] : []];
-    if (sql.includes('FROM products')) return [[{ id: item.product_id, stock: item.stock }]];
+    if (sql.includes('FROM products')) return [[{ ...item, id: item.product_id }]];
     if (sql.includes('INSERT INTO orders')) return [{ insertId: 99 }];
     return [{ affectedRows: 1 }];
   }) };

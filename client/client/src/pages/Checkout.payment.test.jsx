@@ -74,6 +74,31 @@ it('pays now through Razorpay without the browser sending an amount', async () =
   expect(landed.state).toEqual({ justPlaced: true });
 });
 
+it('still shows the confirmation for a cash order when refreshing the bag fails', async () => {
+  api.post.mockResolvedValue({ data: { id: 42 } });
+  refreshCart.mockRejectedValueOnce(new Error('Network Error'));
+  show();
+  await toPaymentStep();
+  fireEvent.click(await screen.findByRole('radio', { name: /Cash on delivery/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Place order/ }));
+
+  await waitFor(() => expect(landed?.pathname).toBe('/orders/42'));
+  expect(landed.state).toEqual({ justPlaced: true });
+});
+
+it('does not report a payment problem when only refreshing the bag fails after paying', async () => {
+  api.post.mockResolvedValue({ data: { id: 42, payment } });
+  payForOrder.mockResolvedValue({ status: 'placed', payment_status: 'paid' });
+  refreshCart.mockRejectedValueOnce(new Error('Network Error'));
+  show();
+  await toPaymentStep();
+  await screen.findByRole('radio', { name: /Pay now/ });
+  fireEvent.click(screen.getByRole('button', { name: 'Pay ₹2,000 now' }));
+
+  await waitFor(() => expect(landed?.pathname).toBe('/orders/42'));
+  expect(landed.state).toEqual({ justPlaced: true });
+});
+
 it('goes to the order page to finish paying if the payment window is closed', async () => {
   api.post.mockResolvedValue({ data: { id: 42, payment } });
   payForOrder.mockRejectedValue(Object.assign(new Error('Payment was not completed.'), { dismissed: true }));

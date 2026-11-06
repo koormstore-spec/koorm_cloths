@@ -33,7 +33,7 @@ const connectionWith = (stock = 5) => ({
   beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn(),
   query: jest.fn(async (sql) => {
     if (sql.includes('FROM cart_items')) return [[cartItem]];
-    if (sql.includes('FROM products')) return [[{ id: 9, stock }]];
+    if (sql.includes('FROM products')) return [[{ id: 9, name: 'Linen Shirt', images: '[]', price: 1000, stock }]];
     if (sql.includes('INSERT INTO orders')) return [{ insertId: 42 }];
     return [[{ id: 1 }]];
   }),

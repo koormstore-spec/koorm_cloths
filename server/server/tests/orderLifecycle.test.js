@@ -203,3 +203,13 @@ it('expires online orders left unpaid for 30 minutes and puts their stock back',
   expect(ran(stillPending, 'p.stock + oi.quantity')).toHaveLength(1);
   expect(updates(paidMeanwhile)).toHaveLength(0);
 });
+
+it('adds up every size of a product when restocking, since one UPDATE changes each product once', async () => {
+  const { restockItems } = require('../utils/orderLifecycle');
+  const connection = { query: jest.fn().mockResolvedValue([{}]) };
+  await restockItems(connection, 12);
+  const [sql, params] = connection.query.mock.calls[0];
+  expect(sql).toContain('SUM(quantity)');
+  expect(sql).toContain('GROUP BY product_id');
+  expect(params).toEqual([12]);
+});

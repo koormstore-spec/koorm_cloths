@@ -10,6 +10,16 @@ const parseImages = (images) => {
   }
 };
 
+const parseSizes = (sizes) => {
+  if (Array.isArray(sizes)) return sizes;
+  try {
+    const parsed = JSON.parse(sizes);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 const getCart = async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -64,18 +74,19 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ message: 'quantity must be a whole number of at least 1' });
     }
 
-    const [products] = await pool.query('SELECT name, stock FROM products WHERE id = ?', [product_id]);
+    const [products] = await pool.query('SELECT name, stock, sizes FROM products WHERE id = ?', [product_id]);
     if (products.length === 0) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    const { name: productName, stock } = products[0];
+    const { name: productName, stock, sizes } = products[0];
+    if (!parseSizes(sizes).map(String).includes(String(size))) {
+      return res.status(400).json({ message: `Size ${size} is not available for ${productName}` });
+    }
 
     const [existing] = await pool.query(
       'SELECT * FROM cart_items WHERE user_id = ? AND product_id = ? AND size = ?',
       [req.user.id, product_id, size]
     );
-    const currentQuantity = existing.length > 0 ? existing[0].quantity : 0;
-
     const [[{ totalInCart }]] = await pool.query(
       'SELECT COALESCE(SUM(quantity), 0) AS totalInCart FROM cart_items WHERE user_id = ? AND product_id = ?',
       [req.user.id, product_id]
@@ -85,7 +96,8 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ message: limitError });
     }
 
-    const shortfall = stockShortfallMessage(stock, currentQuantity + quantity, productName);
+    // Different sizes of one product share its stock, so check the bag's total.
+    const shortfall = stockShortfallMessage(stock, Number(totalInCart) + quantity, productName);
     if (shortfall) {
       return res.status(400).json({ message: shortfall });
     }
@@ -134,7 +146,8 @@ const updateCartItem = async (req, res) => {
       return res.status(400).json({ message: limitError });
     }
 
-    const shortfall = stockShortfallMessage(stock, quantity, productName);
+    // Different sizes of one product share its stock, so check the bag's total.
+    const shortfall = stockShortfallMessage(stock, Number(otherQuantity) + quantity, productName);
     if (shortfall) {
       return res.status(400).json({ message: shortfall });
     }

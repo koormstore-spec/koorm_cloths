@@ -94,7 +94,9 @@ describe('verifyEmail', () => {
   });
 
   it('rejects an invalid or expired code', async () => {
-    pool.query.mockResolvedValueOnce([[]]);
+    pool.query.mockResolvedValueOnce([{ affectedRows: 1 }])
+      .mockResolvedValueOnce([[]])
+      .mockResolvedValueOnce([{ affectedRows: 0 }]);
     const req = { body: { email: 'jane@example.com', code: '000000' } };
     const res = mockRes();
 
@@ -105,7 +107,7 @@ describe('verifyEmail', () => {
   });
 
   it('rejects re-verifying an already-verified account', async () => {
-    pool.query.mockResolvedValueOnce([[{ id: 1, is_verified: 1 }]]);
+    pool.query.mockResolvedValueOnce([{ affectedRows: 1 }]).mockResolvedValueOnce([[{ id: 1, is_verified: 1 }]]);
     const req = { body: { email: 'jane@example.com', code: '123456' } };
     const res = mockRes();
 
@@ -117,6 +119,7 @@ describe('verifyEmail', () => {
 
   it('marks the account verified, clears the code, and returns a login token', async () => {
     pool.query
+      .mockResolvedValueOnce([{ affectedRows: 1 }]) // attempt counted
       .mockResolvedValueOnce([[{ id: 1, name: 'Jane', phone: '999', is_verified: 0 }]]) // code lookup
       .mockResolvedValueOnce([{}]); // UPDATE is_verified = 1
     const req = { body: { email: 'jane@example.com', code: '123456' } };
@@ -128,7 +131,7 @@ describe('verifyEmail', () => {
     expect(payload).toMatchObject({ id: 1, name: 'Jane', email: 'jane@example.com', phone: '999' });
     expect(payload.token).toEqual(expect.any(String));
 
-    const updateCall = pool.query.mock.calls[1];
+    const updateCall = pool.query.mock.calls[2];
     expect(updateCall[0]).toContain('is_verified = 1');
     expect(updateCall[1]).toEqual([1]);
 
@@ -217,7 +220,9 @@ describe('requestLoginCode', () => {
 
 describe('verifyLoginCode', () => {
   it('rejects an invalid or expired code', async () => {
-    pool.query.mockResolvedValueOnce([[]]);
+    pool.query.mockResolvedValueOnce([{ affectedRows: 1 }])
+      .mockResolvedValueOnce([[]])
+      .mockResolvedValueOnce([{ affectedRows: 0 }]);
     const req = { body: { email: 'jane@example.com', code: '000000' } };
     const res = mockRes();
 
@@ -229,6 +234,7 @@ describe('verifyLoginCode', () => {
 
   it('returns a token for a matching, unexpired code', async () => {
     pool.query
+      .mockResolvedValueOnce([{ affectedRows: 1 }]) // attempt counted
       .mockResolvedValueOnce([[{ id: 1, name: 'Jane', phone: '999' }]]) // code lookup
       .mockResolvedValueOnce([{}]); // UPDATE clears code
     const req = { body: { email: 'jane@example.com', code: '123456' } };
@@ -240,5 +246,50 @@ describe('verifyLoginCode', () => {
     const payload = res.json.mock.calls[0][0];
     expect(payload.id).toBe(1);
     expect(payload.token).toEqual(expect.any(String));
+  });
+});
+
+describe('code attempt limit', () => {
+  const wrongGuess = { body: { email: 'jane@example.com', code: '000000' } };
+
+  beforeEach(() => pool.query.mockReset());
+
+  it('counts the guess before comparing the code', async () => {
+    pool.query.mockResolvedValueOnce([{ affectedRows: 1 }])
+      .mockResolvedValueOnce([[{ id: 1, name: 'Jane', phone: '999' }]])
+      .mockResolvedValueOnce([{}]);
+    await verifyLoginCode(wrongGuess, mockRes());
+    expect(pool.query.mock.calls[0][0]).toContain('verification_attempts = verification_attempts + 1');
+    expect(pool.query.mock.calls[0][1]).toEqual(['jane@example.com', 5]);
+    expect(pool.query.mock.calls[1][0]).toContain('verification_code = ?');
+  });
+
+  it.each([
+    ['verifyLoginCode', verifyLoginCode],
+    ['verifyEmail', verifyEmail],
+  ])('%s cancels the code and says so when the last attempt is wrong', async (_, handler) => {
+    pool.query.mockResolvedValueOnce([{ affectedRows: 1 }])
+      .mockResolvedValueOnce([[]])
+      .mockResolvedValueOnce([{ affectedRows: 1 }]); // code cancelled
+    const res = mockRes();
+    await handler(wrongGuess, res);
+    expect(pool.query.mock.calls[2][0]).toContain('verification_code = NULL');
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Too many incorrect codes. Please request a new code.' });
+  });
+
+  it('does not compare the code at all once attempts are used up', async () => {
+    pool.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+    const res = mockRes();
+    await verifyLoginCode(wrongGuess, res);
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('a new code starts with a fresh set of attempts', async () => {
+    pool.query.mockResolvedValueOnce([[{ id: 1, name: 'Jane', email: 'jane@example.com', is_verified: 1 }]])
+      .mockResolvedValueOnce([{}]);
+    await requestLoginCode({ body: { email: 'jane@example.com' } }, mockRes());
+    expect(pool.query.mock.calls[1][0]).toContain('verification_attempts = 0');
   });
 });

@@ -39,6 +39,36 @@ const makeConnection = () => ({
   release: jest.fn(),
 });
 
+// Answers the checkout's queries by what they read, so a test states the data
+// it cares about rather than the order the queries happen to run in.
+const checkoutConnection = ({
+  bag = [{ id: 1, product_id: 9, size: 'M', quantity: 2 }],
+  products = [{ id: 9, name: 'Linen Shirt', images: '["/img.jpg"]', price: 500, stock: 10 }],
+  coupon = null,
+  unpaidOrders = 0,
+  insertId = 55,
+} = {}) => {
+  const connection = makeConnection();
+  connection.query.mockImplementation(async (sql) => {
+    if (sql.includes('FROM users')) return [[{ id: 1 }]];
+    if (sql.includes('INSERT INTO orders')) return [{ insertId }];
+    if (sql.includes('COUNT(*)')) return [[{ total: unpaidOrders }]];
+    if (sql.startsWith('SELECT') && sql.includes('FROM cart_items')) return [bag];
+    if (sql.startsWith('SELECT') && sql.includes('FROM products')) return [products];
+    if (sql.startsWith('SELECT') && sql.includes('FROM coupons')) return [coupon ? [coupon] : []];
+    return [{}];
+  });
+  pool.getConnection.mockResolvedValueOnce(connection);
+  return connection;
+};
+const buyer = { id: 1, name: 'Jane', email: 'jane@example.com' };
+const ranSql = (connection, text) => connection.query.mock.calls.filter(([sql]) => sql.includes(text));
+const percentCoupon = {
+  id: 7, code: 'SAVE10', discount_type: 'percent', discount_value: 10,
+  min_order_amount: 0, max_discount_amount: null, usage_limit: null,
+  used_count: 0, expires_at: null, is_active: 1,
+};
+
 describe('createOrder', () => {
   it('rejects when the shipping address is incomplete', async () => {
     const connection = makeConnection();
@@ -54,67 +84,67 @@ describe('createOrder', () => {
   });
 
   it('rejects when the cart is empty', async () => {
-    const connection = makeConnection();
-    connection.query.mockResolvedValueOnce([[]]); // cart lookup -> empty
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1 }, body: fullShippingBody() };
+    const connection = checkoutConnection({ bag: [] });
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: 'Your cart is empty' });
+    expect(connection.rollback).toHaveBeenCalled();
+    expect(connection.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the bag under the customer lock, so a second simultaneous checkout finds it emptied', async () => {
+    const connection = checkoutConnection({ bag: [] });
+    const res = mockRes();
+
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
+
+    const sql = connection.query.mock.calls.map(([query]) => query);
+    const lockAt = sql.indexOf('SELECT id FROM users WHERE id = ? FOR UPDATE');
+    const bagAt = sql.findIndex((query) => query.includes('FROM cart_items'));
+    expect(connection.beginTransaction.mock.invocationCallOrder[0]).toBeLessThan(connection.query.mock.invocationCallOrder[0]);
+    expect(lockAt).toBeGreaterThanOrEqual(0);
+    expect(bagAt).toBeGreaterThan(lockAt);
+    expect(sql[bagAt]).toContain('FOR UPDATE');
+    expect(ranSql(connection, 'INSERT INTO orders')).toHaveLength(0);
   });
 
   it('rejects when a cart item exceeds available stock, naming how many are left', async () => {
-    const connection = makeConnection();
-    connection.query.mockResolvedValueOnce([[
-      { id: 1, size: 'M', quantity: 5, product_id: 9, name: 'Linen Shirt', images: '[]', price: 1899, stock: 2 },
-    ]]);
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1 }, body: fullShippingBody() };
+    const connection = checkoutConnection({
+      bag: [{ id: 1, product_id: 9, size: 'M', quantity: 5 }],
+      products: [{ id: 9, name: 'Linen Shirt', images: '[]', price: 1899, stock: 2 }],
+    });
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: 'Only 2 left in stock for Linen Shirt' });
-    expect(connection.beginTransaction).not.toHaveBeenCalled();
+    expect(connection.rollback).toHaveBeenCalled();
+    expect(ranSql(connection, 'INSERT INTO orders')).toHaveLength(0);
   });
 
   it('rejects with an out-of-stock message (not "insufficient") when stock has hit zero', async () => {
-    const connection = makeConnection();
-    connection.query.mockResolvedValueOnce([[
-      { id: 1, size: 'M', quantity: 1, product_id: 9, name: 'Linen Shirt', images: '[]', price: 1899, stock: 0 },
-    ]]);
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1 }, body: fullShippingBody() };
+    const connection = checkoutConnection({
+      bag: [{ id: 1, product_id: 9, size: 'M', quantity: 1 }],
+      products: [{ id: 9, name: 'Linen Shirt', images: '[]', price: 1899, stock: 0 }],
+    });
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: 'Linen Shirt is out of stock' });
-    expect(connection.beginTransaction).not.toHaveBeenCalled();
+    expect(connection.rollback).toHaveBeenCalled();
   });
 
   it('places the order, commits, and notifies both customer and admin by email', async () => {
-    const connection = makeConnection();
-    connection.query
-      .mockResolvedValueOnce([[
-        { id: 1, size: 'M', quantity: 2, product_id: 9, name: 'Linen Shirt', images: '["/img.jpg"]', price: 500, stock: 10 },
-      ]]) // cart lookup
-      .mockResolvedValueOnce([[{ id: 1 }]]) // lock customer for first-order eligibility
-      .mockResolvedValueOnce([[{ id: 9, stock: 10 }]]) // lock products, re-check stock
-      .mockResolvedValueOnce([{ insertId: 55 }]) // INSERT order
-      .mockResolvedValueOnce([{}]) // INSERT order_items
-      .mockResolvedValueOnce([{}]) // UPDATE stock
-      .mockResolvedValueOnce([{}]); // DELETE cart_items
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1, name: 'Jane', email: 'jane@example.com' }, body: fullShippingBody() };
+    const connection = checkoutConnection();
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
 
     expect(connection.commit).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
@@ -134,70 +164,38 @@ describe('createOrder', () => {
   });
 
   it('waives shipping once the order total meets the free-shipping threshold', async () => {
-    const connection = makeConnection();
-    connection.query
-      .mockResolvedValueOnce([[
-        { id: 1, size: 'M', quantity: 1, product_id: 9, name: 'Linen Shirt', images: '[]', price: 2500, stock: 10 },
-      ]])
-      .mockResolvedValueOnce([[{ id: 1 }]]) // lock customer for first-order eligibility
-      .mockResolvedValueOnce([[{ id: 9, stock: 10 }]]) // lock products, re-check stock
-      .mockResolvedValueOnce([{ insertId: 56 }])
-      .mockResolvedValueOnce([{}])
-      .mockResolvedValueOnce([{}])
-      .mockResolvedValueOnce([{}]);
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1, name: 'Jane', email: 'jane@example.com' }, body: fullShippingBody() };
+    checkoutConnection({
+      bag: [{ id: 1, product_id: 9, size: 'M', quantity: 1 }],
+      products: [{ id: 9, name: 'Linen Shirt', images: '[]', price: 2500, stock: 10 }],
+      insertId: 56,
+    });
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
 
     const payload = res.json.mock.calls[0][0];
     expect(payload.shipping_fee).toBe(0);
     expect(payload.total_amount).toBe(2500);
   });
 
-  it('rejects an unknown coupon code without touching the transaction', async () => {
-    const connection = makeConnection();
-    connection.query
-      .mockResolvedValueOnce([[
-        { id: 1, size: 'M', quantity: 2, product_id: 9, name: 'Linen Shirt', images: '[]', price: 500, stock: 10 },
-      ]]) // cart lookup
-      .mockResolvedValueOnce([[]]); // coupon lookup -> not found
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1, name: 'Jane', email: 'jane@example.com' }, body: { ...fullShippingBody(), coupon_code: 'NOPE' } };
+  it('rejects an unknown coupon code and places nothing', async () => {
+    const connection = checkoutConnection();
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: { ...fullShippingBody(), coupon_code: 'NOPE' } }, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: 'Invalid coupon code' });
-    expect(connection.beginTransaction).not.toHaveBeenCalled();
-    expect(connection.release).toHaveBeenCalled();
+    expect(connection.rollback).toHaveBeenCalled();
+    expect(ranSql(connection, 'INSERT INTO orders')).toHaveLength(0);
+    expect(connection.release).toHaveBeenCalledTimes(1);
   });
 
   it('applies a valid coupon, reduces the total, and increments its usage count', async () => {
-    const connection = makeConnection();
-    connection.query
-      .mockResolvedValueOnce([[
-        { id: 1, size: 'M', quantity: 2, product_id: 9, name: 'Linen Shirt', images: '[]', price: 500, stock: 10 },
-      ]]) // cart lookup -> itemsTotal 1000
-      .mockResolvedValueOnce([[{
-        id: 7, code: 'SAVE10', discount_type: 'percent', discount_value: 10,
-        min_order_amount: 0, max_discount_amount: null, usage_limit: null,
-        used_count: 0, expires_at: null, is_active: 1,
-      }]]) // coupon lookup
-      .mockResolvedValueOnce([[{ id: 1 }]]) // lock customer for first-order eligibility
-      .mockResolvedValueOnce([[{ id: 9, stock: 10 }]]) // lock products, re-check stock
-      .mockResolvedValueOnce([{ insertId: 60 }]) // INSERT order
-      .mockResolvedValueOnce([{}]) // INSERT order_items
-      .mockResolvedValueOnce([{}]) // UPDATE stock
-      .mockResolvedValueOnce([{}]) // DELETE cart_items
-      .mockResolvedValueOnce([{}]); // UPDATE coupons used_count
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1, name: 'Jane', email: 'jane@example.com' }, body: { ...fullShippingBody(), coupon_code: 'save10' } };
+    const connection = checkoutConnection({ coupon: percentCoupon, insertId: 60 });
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: { ...fullShippingBody(), coupon_code: 'save10' } }, res);
 
     expect(connection.commit).toHaveBeenCalled();
     const payload = res.json.mock.calls[0][0];
@@ -207,22 +205,51 @@ describe('createOrder', () => {
     expect(payload.total_amount).toBe(999); // 1000 - 100 discount + 99 shipping
 
     const usageUpdateCall = connection.query.mock.calls.find(([sql]) => sql.includes('used_count = used_count + 1'));
-    expect(usageUpdateCall[0]).toContain('used_count = used_count + 1');
     expect(usageUpdateCall[1]).toEqual([7]);
   });
 
-  it('rolls back the transaction if something fails after it has begun', async () => {
-    const connection = makeConnection();
-    connection.query
-      .mockResolvedValueOnce([[
-        { id: 1, size: 'M', quantity: 1, product_id: 9, name: 'Linen Shirt', images: '[]', price: 1000, stock: 10 },
-      ]])
-      .mockRejectedValueOnce(new Error('db exploded')); // INSERT order fails
-    pool.getConnection.mockResolvedValueOnce(connection);
-    const req = { user: { id: 1, name: 'Jane', email: 'jane@example.com' }, body: fullShippingBody() };
+  it('locks the coupon row before checking its limit, so its last use can only go once', async () => {
+    const connection = checkoutConnection({ coupon: { ...percentCoupon, usage_limit: 5, used_count: 5 } });
     const res = mockRes();
 
-    await createOrder(req, res);
+    await createOrder({ user: buyer, body: { ...fullShippingBody(), coupon_code: 'SAVE10' } }, res);
+
+    expect(ranSql(connection, 'FROM coupons')[0][0]).toContain('FOR UPDATE');
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'This coupon has reached its usage limit' });
+    expect(ranSql(connection, 'INSERT INTO orders')).toHaveLength(0);
+  });
+
+  it('counts unpaid online orders towards a limited coupon', async () => {
+    const connection = checkoutConnection({ coupon: { ...percentCoupon, usage_limit: 2, used_count: 1 }, unpaidOrders: 1 });
+    const res = mockRes();
+
+    await createOrder({ user: buyer, body: { ...fullShippingBody(), coupon_code: 'SAVE10' } }, res);
+
+    expect(res.json).toHaveBeenCalledWith({ message: 'This coupon has reached its usage limit' });
+    expect(ranSql(connection, 'INSERT INTO orders')).toHaveLength(0);
+  });
+
+  it('rejects a saved coupon with a negative value instead of raising the total', async () => {
+    const connection = checkoutConnection({ coupon: { ...percentCoupon, discount_type: 'flat', discount_value: -500 } });
+    const res = mockRes();
+
+    await createOrder({ user: buyer, body: { ...fullShippingBody(), coupon_code: 'SAVE10' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(ranSql(connection, 'INSERT INTO orders')).toHaveLength(0);
+  });
+
+  it('rolls back the transaction if something fails after it has begun', async () => {
+    const connection = checkoutConnection();
+    const answer = connection.query.getMockImplementation();
+    connection.query.mockImplementation(async (sql, params) => {
+      if (sql.includes('INSERT INTO orders')) throw new Error('db exploded');
+      return answer(sql, params);
+    });
+    const res = mockRes();
+
+    await createOrder({ user: buyer, body: fullShippingBody() }, res);
 
     expect(connection.rollback).toHaveBeenCalled();
     expect(connection.release).toHaveBeenCalled();

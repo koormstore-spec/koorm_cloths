@@ -59,26 +59,48 @@ const createOrder = async (req, res) => {
       return res.status(503).json({ message: 'Online payment is not available right now. Please choose cash on delivery.' });
     }
 
-    const [cartRows] = await connection.query(
-      `SELECT ci.id, ci.size, ci.quantity, p.id AS product_id, p.name, p.images,
-              COALESCE(p.discount_price, p.price) AS price, p.stock
-       FROM cart_items ci JOIN products p ON ci.product_id = p.id
-       WHERE ci.user_id = ?`,
+    const couponCode = coupon_code ? String(coupon_code).trim().toUpperCase() : null;
+    const orderNumber = generateOrderNumber();
+    const isOnline = paymentMethod === 'ONLINE';
+    const reject = async (status, message) => {
+      await connection.rollback();
+      connection.release();
+      released = true;
+      return res.status(status).json({ message });
+    };
+
+    await connection.beginTransaction();
+
+    // Everything that decides this order is read under locks, always in this
+    // sequence, so simultaneous checkouts wait for each other instead of acting
+    // on the same bag, the last piece, or the last use of a coupon.
+    // One checkout at a time per customer, then FIRST30 eligibility.
+    await connection.query('SELECT id FROM users WHERE id = ? FOR UPDATE', [req.user.id]);
+    const eligibilityError = await firstOrderError(connection, req.user.id, couponCode, true);
+    if (eligibilityError) return await reject(400, eligibilityError);
+
+    // Read after the customer lock: a checkout that was waiting finds the bag
+    // already emptied rather than placing the same order again.
+    const [bagRows] = await connection.query(
+      'SELECT id, product_id, size, quantity FROM cart_items WHERE user_id = ? FOR UPDATE',
       [req.user.id]
     );
+    if (bagRows.length === 0) return await reject(400, 'Your cart is empty');
 
-    if (cartRows.length === 0) {
-      connection.release();
-      return res.status(400).json({ message: 'Your cart is empty' });
-    }
-
-    // Quick check for a clear message before any locking; repeated under
-    // row locks inside the transaction below.
-    const earlyStockError = stockProblem(cartRows, new Map(cartRows.map((item) => [item.product_id, item.stock])));
-    if (earlyStockError) {
-      connection.release();
-      return res.status(400).json({ message: earlyStockError });
-    }
+    // Lock the products so two customers can't buy the last piece at once.
+    const productIds = [...new Set(bagRows.map((item) => item.product_id))];
+    const [lockedProducts] = await connection.query(
+      `SELECT id, name, images, COALESCE(discount_price, price) AS price, stock
+       FROM products WHERE id IN (?) ORDER BY id FOR UPDATE`,
+      [productIds]
+    );
+    const productsById = new Map(lockedProducts.map((product) => [product.id, product]));
+    const cartRows = bagRows.map((item) => {
+      const product = productsById.get(item.product_id);
+      return { ...item, name: product?.name, images: product?.images, price: product?.price };
+    });
+    const stockError = stockProblem(cartRows, new Map(lockedProducts.map((product) => [product.id, product.stock])));
+    if (stockError) return await reject(400, stockError);
 
     const itemsTotal = cartRows.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
     const shippingFee = itemsTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
@@ -87,48 +109,27 @@ const createOrder = async (req, res) => {
     // expired, hit its usage limit, or never existed can't be applied.
     let discountAmount = 0;
     let appliedCoupon = null;
-    if (coupon_code) {
-      const [coupons] = await connection.query('SELECT * FROM coupons WHERE code = ?', [
-        coupon_code.trim().toUpperCase(),
-      ]);
-      if (coupons.length === 0) {
-        connection.release();
-        return res.status(400).json({ message: 'Invalid coupon code' });
+    if (couponCode) {
+      const [coupons] = await connection.query('SELECT * FROM coupons WHERE code = ? FOR UPDATE', [couponCode]);
+      if (coupons.length === 0) return await reject(400, 'Invalid coupon code');
+
+      // Online orders are only counted once paid, and a paid order can't be
+      // turned away, so unpaid ones hold their use of a limited coupon.
+      let unpaidOrders = 0;
+      if (coupons[0].usage_limit != null) {
+        const [[holds]] = await connection.query(
+          "SELECT COUNT(*) AS total FROM orders WHERE coupon_code = ? AND status = 'pending_payment'",
+          [couponCode]
+        );
+        unpaidOrders = Number(holds.total);
       }
-      const result = evaluateCoupon(coupons[0], itemsTotal);
-      if (result.error) {
-        connection.release();
-        return res.status(400).json({ message: result.error });
-      }
+      const result = evaluateCoupon({ ...coupons[0], used_count: Number(coupons[0].used_count) + unpaidOrders }, itemsTotal);
+      if (result.error) return await reject(400, result.error);
       discountAmount = result.discountAmount;
       appliedCoupon = coupons[0];
     }
 
     const totalAmount = itemsTotal + shippingFee - discountAmount;
-    const orderNumber = generateOrderNumber();
-    const isOnline = paymentMethod === 'ONLINE';
-
-    await connection.beginTransaction();
-
-    // Serialize orders for each customer, then check first-order eligibility
-    // using a current read so concurrent checkouts cannot reuse FIRST30.
-    await connection.query('SELECT id FROM users WHERE id = ? FOR UPDATE', [req.user.id]);
-    const eligibilityError = await firstOrderError(connection, req.user.id, appliedCoupon?.code, true);
-    if (eligibilityError) {
-      await connection.rollback();
-      connection.release();
-      return res.status(400).json({ message: eligibilityError });
-    }
-
-    // Lock the products so two customers can't buy the last piece at once.
-    const productIds = [...new Set(cartRows.map((item) => item.product_id))];
-    const [lockedProducts] = await connection.query('SELECT id, stock FROM products WHERE id IN (?) FOR UPDATE', [productIds]);
-    const lockedStockError = stockProblem(cartRows, new Map((lockedProducts || []).map((product) => [product.id, product.stock])));
-    if (lockedStockError) {
-      await connection.rollback();
-      connection.release();
-      return res.status(400).json({ message: lockedStockError });
-    }
 
     const [orderResult] = await connection.query(
       `INSERT INTO orders

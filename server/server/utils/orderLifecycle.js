@@ -9,9 +9,13 @@ const { refundOrder, refundableBalance, httpError } = require('./refunds');
 // arrive in time the order is cancelled and the stock goes back on sale.
 const PENDING_PAYMENT_MINUTES = 30;
 
+// Different sizes of one product share its stock. A multi-table UPDATE changes
+// each product only once, so the quantities are added up per product first.
 const restockItems = (connection, orderId) => connection.query(
-  `UPDATE products p JOIN order_items oi ON oi.product_id = p.id
-   SET p.stock = p.stock + oi.quantity WHERE oi.order_id = ?`,
+  `UPDATE products p
+   JOIN (SELECT product_id, SUM(quantity) AS quantity FROM order_items WHERE order_id = ? GROUP BY product_id) oi
+     ON oi.product_id = p.id
+   SET p.stock = p.stock + oi.quantity`,
   [orderId]
 );
 

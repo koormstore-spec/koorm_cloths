@@ -37,18 +37,21 @@ const evaluateCoupon = (coupon, itemsTotal) => {
   if (coupon.usage_limit != null && coupon.used_count >= coupon.usage_limit) {
     return { error: 'This coupon has reached its usage limit' };
   }
+  // Coupons saved before these values were checked must never raise a total.
+  const discountValue = Number(coupon.discount_value);
+  const maxDiscount = coupon.max_discount_amount == null ? null : Number(coupon.max_discount_amount);
+  if (!(discountValue > 0) || (coupon.discount_type === 'percent' && discountValue > 100) || (maxDiscount !== null && !(maxDiscount > 0))) {
+    return { error: 'This coupon is not valid' };
+  }
   const minOrderAmount = Number(coupon.min_order_amount);
   if (itemsTotal < minOrderAmount) {
     return { error: `Add items worth ₹${(minOrderAmount - itemsTotal).toFixed(0)} more to use this coupon` };
   }
 
-  let discountAmount =
-    coupon.discount_type === 'percent'
-      ? (itemsTotal * Number(coupon.discount_value)) / 100
-      : Number(coupon.discount_value);
+  let discountAmount = coupon.discount_type === 'percent' ? (itemsTotal * discountValue) / 100 : discountValue;
 
-  if (coupon.max_discount_amount != null) {
-    discountAmount = Math.min(discountAmount, Number(coupon.max_discount_amount));
+  if (maxDiscount !== null) {
+    discountAmount = Math.min(discountAmount, maxDiscount);
   }
   discountAmount = Math.min(discountAmount, itemsTotal);
   discountAmount = Math.round(discountAmount * 100) / 100;
@@ -101,6 +104,29 @@ const validateCoupon = async (req, res) => {
 
 // ---- Admin ----
 
+const isBlank = (value) => value === undefined || value === null || value === '';
+
+// Shared by create and update so an edit can't save what creating would refuse.
+const couponFieldsError = ({ discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit }) => {
+  if (!['percent', 'flat'].includes(discount_type)) {
+    return 'Discount type must be percent or flat';
+  }
+  const value = Number(discount_value);
+  if (isBlank(discount_value) || !Number.isFinite(value) || value <= 0 || (discount_type === 'percent' && value > 100)) {
+    return 'Discount value must be valid and within the selected type';
+  }
+  if (!isBlank(min_order_amount) && !(Number(min_order_amount) >= 0)) {
+    return 'Minimum order amount cannot be negative';
+  }
+  if (!isBlank(max_discount_amount) && !(Number(max_discount_amount) > 0)) {
+    return 'Maximum discount must be greater than zero';
+  }
+  if (!isBlank(usage_limit) && (!Number.isInteger(Number(usage_limit)) || Number(usage_limit) < 1)) {
+    return 'Redemption limit must be a positive whole number';
+  }
+  return null;
+};
+
 const listCoupons = async (req, res) => {
   try {
     const [coupons] = await pool.query('SELECT * FROM coupons ORDER BY created_at DESC');
@@ -128,20 +154,9 @@ const createCoupon = async (req, res) => {
     if (!code?.trim() || !discount_type || discount_value === undefined || discount_value === '') {
       return res.status(400).json({ message: 'Code, discount type and discount value are required' });
     }
-    if (!['percent', 'flat'].includes(discount_type)) {
-      return res.status(400).json({ message: 'Discount type must be percent or flat' });
-    }
-    if (!Number.isFinite(Number(discount_value)) || Number(discount_value) <= 0 || (discount_type === 'percent' && Number(discount_value) > 100)) {
-      return res.status(400).json({ message: 'Discount value must be valid and within the selected type' });
-    }
-    if (min_order_amount != null && Number(min_order_amount) < 0) {
-      return res.status(400).json({ message: 'Minimum order amount cannot be negative' });
-    }
-    if (max_discount_amount != null && Number(max_discount_amount) <= 0) {
-      return res.status(400).json({ message: 'Maximum discount must be greater than zero' });
-    }
-    if (usage_limit != null && (!Number.isInteger(Number(usage_limit)) || Number(usage_limit) < 1)) {
-      return res.status(400).json({ message: 'Redemption limit must be a positive whole number' });
+    const fieldsError = couponFieldsError(req.body);
+    if (fieldsError) {
+      return res.status(400).json({ message: fieldsError });
     }
 
     const normalizedCode = code.trim().toUpperCase();
@@ -184,17 +199,25 @@ const updateCoupon = async (req, res) => {
         return res.status(400).json({ message: 'A coupon with this code already exists' });
       }
     }
-    if (discount_type && !['percent', 'flat'].includes(discount_type)) {
-      return res.status(400).json({ message: 'Discount type must be percent or flat' });
-    }
-
-    const updated = await couponModel.update(req.params.id, {
-      code: normalizedCode,
+    const merged = {
       discount_type: discount_type || current.discount_type,
       discount_value: discount_value !== undefined ? discount_value : current.discount_value,
       min_order_amount: min_order_amount !== undefined ? min_order_amount : current.min_order_amount,
       max_discount_amount: max_discount_amount !== undefined ? max_discount_amount : current.max_discount_amount,
       usage_limit: usage_limit !== undefined ? usage_limit : current.usage_limit,
+    };
+    const fieldsError = couponFieldsError(merged);
+    if (fieldsError) {
+      return res.status(400).json({ message: fieldsError });
+    }
+
+    const updated = await couponModel.update(req.params.id, {
+      ...merged,
+      code: normalizedCode,
+      discount_value: Number(merged.discount_value),
+      min_order_amount: merged.min_order_amount || 0,
+      max_discount_amount: merged.max_discount_amount || null,
+      usage_limit: merged.usage_limit || null,
       expires_at: expires_at !== undefined ? expires_at : current.expires_at,
       is_active: is_active !== undefined ? (is_active ? 1 : 0) : current.is_active,
     });

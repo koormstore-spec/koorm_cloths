@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_verified TINYINT(1) NOT NULL DEFAULT 0,
   verification_code VARCHAR(255) NULL,
   verification_code_expiry DATETIME NULL,
+  verification_attempts INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

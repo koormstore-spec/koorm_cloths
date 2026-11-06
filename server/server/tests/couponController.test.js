@@ -66,6 +66,54 @@ describe('evaluateCoupon', () => {
   });
 });
 
+describe('evaluateCoupon with invalid saved values', () => {
+  const coupon = { is_active: 1, discount_type: 'flat', discount_value: 100, min_order_amount: 0, max_discount_amount: null, usage_limit: null, used_count: 0, expires_at: null };
+
+  it.each([
+    ['a negative flat value', { discount_value: -500 }],
+    ['a zero value', { discount_value: 0 }],
+    ['a value that is not a number', { discount_value: 'abc' }],
+    ['a negative percent', { discount_type: 'percent', discount_value: -10 }],
+    ['a percent over 100', { discount_type: 'percent', discount_value: 150 }],
+    ['a negative maximum discount', { max_discount_amount: -50 }],
+  ])('rejects %s', (_, fields) => {
+    expect(evaluateCoupon({ ...coupon, ...fields }, 1000)).toEqual({ error: 'This coupon is not valid' });
+  });
+});
+
+describe('updateCoupon validation', () => {
+  const current = { id: 1, code: 'SAVE10', discount_type: 'percent', discount_value: '10.00', min_order_amount: '0.00', max_discount_amount: null, usage_limit: null, expires_at: null, is_active: 1 };
+
+  beforeEach(() => pool.query.mockReset());
+
+  it.each([
+    ['a negative discount', { discount_value: -500 }],
+    ['a zero discount', { discount_value: 0 }],
+    ['a percent over 100', { discount_value: 150 }],
+    ['a flat-to-percent change that breaks the limit', { discount_type: 'percent', discount_value: 101 }],
+    ['a negative minimum order', { min_order_amount: -1 }],
+    ['a negative maximum discount', { max_discount_amount: -1 }],
+    ['an unusable redemption limit', { usage_limit: 0.5 }],
+  ])('refuses %s and saves nothing', async (_, body) => {
+    pool.query.mockResolvedValueOnce([[current]]);
+    const res = mockRes();
+    await updateCoupon({ params: { id: 1 }, body }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(pool.query.mock.calls.some(([sql]) => sql.includes('UPDATE coupons'))).toBe(false);
+  });
+
+  it('still saves a valid edit and leaves the other fields as they were', async () => {
+    pool.query.mockResolvedValueOnce([[current]])
+      .mockResolvedValueOnce([{}])
+      .mockResolvedValueOnce([[{ ...current, discount_value: '20.00' }]]);
+    const res = mockRes();
+    await updateCoupon({ params: { id: 1 }, body: { discount_value: 20 } }, res);
+    expect(res.status).not.toHaveBeenCalled();
+    const update = pool.query.mock.calls.find(([sql]) => sql.includes('UPDATE coupons'));
+    expect(update[1].slice(0, 3)).toEqual(['SAVE10', 'percent', 20]);
+  });
+});
+
 describe('validateCoupon', () => {
   it('rejects a missing code', async () => {
     const req = { user: { id: 1 }, body: {} };

@@ -68,6 +68,7 @@ const initializeDatabase = async () => {
     await addColumnIfMissing(connection, 'users', 'is_verified', 'TINYINT(1) NOT NULL DEFAULT 0');
     await addColumnIfMissing(connection, 'users', 'verification_code', 'VARCHAR(255) NULL');
     await addColumnIfMissing(connection, 'users', 'verification_code_expiry', 'DATETIME NULL');
+    await addColumnIfMissing(connection, 'users', 'verification_attempts', 'INT NOT NULL DEFAULT 0');
     await addColumnIfMissing(connection, 'orders', 'coupon_code', 'VARCHAR(40) NULL');
     await addColumnIfMissing(connection, 'orders', 'discount_amount', 'DECIMAL(10,2) NOT NULL DEFAULT 0');
     // Online payments: existing orders are all cash on delivery.

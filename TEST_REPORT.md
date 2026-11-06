@@ -1,5 +1,7 @@
 **Koorm project test and bug report**
 
+**Latest retest — 7 November 2026:** 578 automated tests and the production build pass. Eight earlier findings are verified fixed in the tested scenarios; B07 is partially fixed because checkout still accepts a size removed after it entered the cart. See [the current retest report](RETEST_REPORT.md). The report below records the original audit and its historical reproduction scripts.
+
 The existing automated suites pass, but targeted checks reproduced **9 defects: 4 high priority and 5 medium priority**. Findings concern the current working tree, including changes already present when the audit began. Application source was not changed; the new files contain this report and isolated reproduction checks.
 
 | Check | Result |

@@ -1,6 +1,6 @@
 ﻿jest.mock('../config/db', () => ({ pool: { query: jest.fn() } }));
 const { pool } = require('../config/db');
-const { getProducts, getProductFilters, updateProductStock, getProductBySlug } = require('../controllers/productController');
+const { getProducts, getProductFilters, updateProduct, updateProductStock, getProductBySlug } = require('../controllers/productController');
 
 beforeEach(() => jest.resetAllMocks());
 const response = () => ({ json: jest.fn(), status: jest.fn().mockReturnThis() });
@@ -131,4 +131,38 @@ test('false flags do not hide stock or full-price products and values stay param
   expect(sql).not.toContain('p.discount_price > 0');
   expect(sql).not.toContain(input);
   expect(params[0]).toBe(`%${input.toLowerCase()}%`);
+});
+
+describe('updateProduct sale price', () => {
+  const current = { id: 1, name: 'Shirt', slug: 'shirt', price: '1000.00', discount_price: '700.00', sizes: ['S', 'M'], colors: ['Blue'], images: [], stock: 5, is_featured: 0 };
+  const save = async (body) => {
+    pool.query.mockResolvedValueOnce([[current]]).mockResolvedValueOnce([{}]).mockResolvedValueOnce([[current]]);
+    const res = response();
+    await updateProduct({ params: { id: 1 }, body }, res);
+    expect(res.status).not.toHaveBeenCalled();
+    return pool.query.mock.calls[1][1];
+  };
+
+  test.each([
+    ['null', null],
+    ['an empty value', ''],
+    ['zero', 0],
+  ])('clearing it with %s removes the discount', async (_, value) => {
+    expect((await save({ discount_price: value }))[4]).toBeNull();
+  });
+
+  test('leaving it out keeps the discount', async () => {
+    expect((await save({ name: 'Renamed' }))[4]).toBe('700.00');
+  });
+
+  test('a new sale price is saved', async () => {
+    expect((await save({ discount_price: 600 }))[4]).toBe(600);
+  });
+
+  test('fields left out are written back as JSON text, whichever form the driver returned', async () => {
+    const params = await save({ name: 'Renamed' });
+    expect(params[8]).toBe('["S","M"]');
+    expect(params[9]).toBe('["Blue"]');
+    expect(params[10]).toBe('[]');
+  });
 });

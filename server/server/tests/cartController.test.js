@@ -30,7 +30,7 @@ describe('addToCart', () => {
   it('rejects when the 4-per-product bag limit would be exceeded, even with plenty of stock', async () => {
     // mysql2 returns SUM(...) as a string — use one here so a regression to
     // naive `totalInCart + quantity` (string concatenation) would be caught.
-    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 50 }]]) // product
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 50, sizes: '["S","M","L"]' }]]) // product
       .mockResolvedValueOnce([[{ id: 5, quantity: 2 }]]) // existing same-size row
       .mockResolvedValueOnce([[{ totalInCart: '3' }]]); // already 3 of this product across sizes
     const res = response();
@@ -40,7 +40,7 @@ describe('addToCart', () => {
   });
 
   it('allows reaching exactly the 4-item limit (string SUM result must add numerically, not concatenate)', async () => {
-    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 50 }]])
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 50, sizes: '["S","M","L"]' }]])
       .mockResolvedValueOnce([[{ id: 5, quantity: 2 }]])
       .mockResolvedValueOnce([[{ totalInCart: '2' }]]) // 2 already (as a string, like mysql2 returns), +2 = 4, exactly the cap
       .mockResolvedValueOnce([{ affectedRows: 1 }]);
@@ -50,7 +50,7 @@ describe('addToCart', () => {
   });
 
   it('rejects with an out-of-stock message when stock has hit zero', async () => {
-    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 0 }]])
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 0, sizes: '["S","M","L"]' }]])
       .mockResolvedValueOnce([[]])
       .mockResolvedValueOnce([[{ totalInCart: 0 }]]);
     const res = response();
@@ -60,7 +60,7 @@ describe('addToCart', () => {
   });
 
   it('rejects with an insufficient-stock message naming the quantity left, accounting for what is already in the bag', async () => {
-    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 2 }]])
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 2, sizes: '["S","M","L"]' }]])
       .mockResolvedValueOnce([[{ id: 5, quantity: 1 }]])
       .mockResolvedValueOnce([[{ totalInCart: 1 }]]);
     const res = response();
@@ -70,7 +70,7 @@ describe('addToCart', () => {
   });
 
   it('adds a new line when there is enough stock and no existing cart row', async () => {
-    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 5 }]])
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 5, sizes: '["S","M","L"]' }]])
       .mockResolvedValueOnce([[]])
       .mockResolvedValueOnce([[{ totalInCart: 0 }]])
       .mockResolvedValueOnce([{ insertId: 1 }]);
@@ -81,7 +81,7 @@ describe('addToCart', () => {
   });
 
   it('increments an existing cart row when there is enough stock', async () => {
-    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 5 }]])
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 5, sizes: '["S","M","L"]' }]])
       .mockResolvedValueOnce([[{ id: 5, quantity: 2 }]])
       .mockResolvedValueOnce([[{ totalInCart: 2 }]])
       .mockResolvedValueOnce([{ affectedRows: 1 }]);
@@ -92,7 +92,47 @@ describe('addToCart', () => {
   });
 });
 
+describe('addToCart size and shared stock checks', () => {
+  it('rejects a size the product does not come in', async () => {
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 5, sizes: '["S","M"]' }]]);
+    const res = response();
+    await addToCart({ body: { product_id: 9, size: 'ZZZ', quantity: 1 }, user: { id: 1 } }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Size ZZZ is not available for Linen Shirt' });
+    expect(pool.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts sizes whether the driver returns the column as text or as an array', async () => {
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 5, sizes: ['S', 'M'] }]])
+      .mockResolvedValueOnce([[]])
+      .mockResolvedValueOnce([[{ totalInCart: 0 }]])
+      .mockResolvedValueOnce([{ insertId: 1 }]);
+    const res = response();
+    await addToCart({ body: { product_id: 9, size: 'M', quantity: 1 }, user: { id: 1 } }, res);
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it('counts other sizes in the bag against the stock they share', async () => {
+    pool.query.mockResolvedValueOnce([[{ name: 'Linen Shirt', stock: 3, sizes: '["M","L"]' }]])
+      .mockResolvedValueOnce([[]]) // no L in the bag yet
+      .mockResolvedValueOnce([[{ totalInCart: '2' }]]); // but two M
+    const res = response();
+    await addToCart({ body: { product_id: 9, size: 'L', quantity: 2 }, user: { id: 1 } }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Only 3 left in stock for Linen Shirt' });
+  });
+});
+
 describe('updateCartItem', () => {
+  it('counts other sizes in the bag against the stock they share', async () => {
+    pool.query.mockResolvedValueOnce([[{ id: 5, product_id: 9, product_name: 'Linen Shirt', stock: 3 }]])
+      .mockResolvedValueOnce([[{ otherQuantity: '2' }]]);
+    const res = response();
+    await updateCartItem({ body: { quantity: 2 }, params: { id: 5 }, user: { id: 1 } }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Only 3 left in stock for Linen Shirt' });
+  });
+
   it('rejects a non-whole or non-positive quantity', async () => {
     const res = response();
     await updateCartItem({ body: { quantity: 0 }, params: { id: 5 }, user: { id: 1 } }, res);
