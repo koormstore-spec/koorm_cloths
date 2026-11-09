@@ -13,6 +13,7 @@ const bodyOf = (res) => JSON.parse(res.send.mock.calls[0][0]);
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+  process.env.RAZORPAY_ALLOW_TEST = 'true';
   process.env.RAZORPAY_KEY_SECRET = 'super_secret_value';
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
 });

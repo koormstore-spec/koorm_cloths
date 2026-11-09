@@ -24,6 +24,7 @@ const user = { id: 1, name: 'Jane', email: 'jane@example.com' };
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+  process.env.RAZORPAY_ALLOW_TEST = 'true';
   process.env.RAZORPAY_KEY_SECRET = 'test_secret';
   process.env.RAZORPAY_WEBHOOK_SECRET = 'webhook_secret';
   confirmGatewayPayment.mockResolvedValue({ status: 'captured' });

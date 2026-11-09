@@ -18,6 +18,7 @@ const mockRes = () => {
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+  process.env.RAZORPAY_ALLOW_TEST = 'true';
   process.env.RAZORPAY_KEY_SECRET = 'test_secret';
 });
 

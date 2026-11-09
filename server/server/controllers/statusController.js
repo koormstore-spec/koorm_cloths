@@ -1,5 +1,5 @@
 const { pool } = require('../config/db');
-const { isConfigured, getMode } = require('../utils/razorpay');
+const { isEnabled, getMode } = require('../utils/razorpay');
 const { version } = require('../package.json');
 
 const DB_TIMEOUT_MS = 3000;
@@ -39,7 +39,7 @@ const getStatus = async (req, res) => {
     checks: {
       database,
       payments: {
-        status: isConfigured() ? 'enabled' : 'cash_on_delivery_only',
+        status: isEnabled() ? 'enabled' : 'cash_on_delivery_only',
         mode: getMode(),
         webhooks: process.env.RAZORPAY_WEBHOOK_SECRET ? 'configured' : 'not_configured',
       },

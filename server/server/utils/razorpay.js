@@ -17,6 +17,15 @@ const getMode = () => {
   return null;
 };
 
+// Customers can pay online only with live keys. Test keys stay switched off so
+// shoppers never reach a sandbox checkout; set RAZORPAY_ALLOW_TEST=true in
+// server/.env to try the test checkout locally. Checkout shows 'Pay now' as
+// unavailable whenever this is false.
+const isEnabled = () => {
+  const mode = getMode();
+  return mode === 'live' || (mode === 'test' && process.env.RAZORPAY_ALLOW_TEST === 'true');
+};
+
 // Logs the payment setup once at startup so a misconfigured key is caught
 // before a customer hits it. Never prints the secrets themselves.
 const logPaymentConfig = (log = console) => {
@@ -26,6 +35,7 @@ const logPaymentConfig = (log = console) => {
   }
   const mode = getMode();
   if (!mode) log.warn('Razorpay: RAZORPAY_KEY_ID should start with rzp_test_ or rzp_live_. Check server/.env.');
+  else if (!isEnabled()) log.warn('Razorpay: test keys found; online payments stay off until live (rzp_live_) keys are set. Checkout offers cash on delivery only.');
   else log.log(`Razorpay: online payments enabled in ${mode.toUpperCase()} mode.`);
   if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
     log.warn('Razorpay: RAZORPAY_WEBHOOK_SECRET is not set, so webhooks are rejected. Payments still confirm from the browser, but orders paid by customers who close the tab early will not be confirmed.');
@@ -55,6 +65,11 @@ const gatewayError = (err, fallback) => {
 };
 
 const createGatewayOrder = async ({ amount, receipt, notes }) => {
+  if (!isEnabled()) {
+    const err = new Error('Online payment is not available right now. Please choose cash on delivery.');
+    err.statusCode = 503;
+    throw err;
+  }
   try {
     return await getClient().orders.create({ amount: toPaise(amount), currency: 'INR', receipt, notes });
   } catch (err) {
@@ -186,6 +201,7 @@ const checkoutOptions = (order, gatewayOrderId, customer) => ({
 
 module.exports = {
   isConfigured,
+  isEnabled,
   getMode,
   logPaymentConfig,
   confirmGatewayPayment,

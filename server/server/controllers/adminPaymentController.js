@@ -1,5 +1,5 @@
 const { pool } = require('../config/db');
-const { getMode, isConfigured } = require('../utils/razorpay');
+const { getMode, isEnabled } = require('../utils/razorpay');
 const { syncPaymentDetails, parsePaymentDetails } = require('../utils/paymentDetails');
 
 const COLLECTED = ['paid', 'partially_refunded', 'refunded'];
@@ -42,7 +42,7 @@ const getPayments = async (req, res) => {
     };
     summary.net = Math.round((summary.collected - summary.refunded - summary.fees) * 100) / 100;
 
-    res.json({ mode: getMode(), online: isConfigured(), summary, payments });
+    res.json({ mode: getMode(), online: isEnabled(), summary, payments });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

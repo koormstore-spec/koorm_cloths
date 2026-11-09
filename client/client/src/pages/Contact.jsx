@@ -10,10 +10,10 @@ export default function Contact() {
         <div className="border border-sand bg-white/70 p-6 sm:p-8">
           <h2 className="font-serif text-2xl">Koorm</h2>
           <dl className="mt-6 space-y-6 text-sm">
-            <div>
+            {/* <div>
               <dt className="font-semibold">Phone</dt>
               <dd className="mt-2"><a href="tel:+917892766354" className="link-underline text-muted hover:text-accent">7892766354</a></dd>
-            </div>
+            </div> */}
             <div>
               <dt className="font-semibold">Location</dt>
               <dd className="mt-2 text-muted">Hosa road</dd>
@@ -23,8 +23,8 @@ export default function Contact() {
         <div id="returns" className="scroll-mt-56 border border-sand bg-sand/25 p-6 sm:p-8">
           <p className="eyebrow mb-3">Return policy</p>
           <h2 className="font-serif text-3xl">1 month</h2>
-          <p className="mt-4 text-sm leading-relaxed text-muted">Our return period is 1 month from delivery. To start a return, open the order under My orders and choose “Request a return”. Online payments are refunded to the original payment method; for cash on delivery orders we transfer the refund to you. Questions? Call us.</p>
-          <a href="tel:+917892766354" className="btn-primary mt-6">Call 7892766354</a>
+          <p className="mt-4 text-sm leading-relaxed text-muted">Our return period is 1 month from delivery. To start a return, open the order under My orders and choose “Request a return”. Online payments are refunded to the original payment method; for cash on delivery orders we transfer the refund to you. Questions? Mail us.</p>
+          {/* <a href="tel:+917892766354" className="btn-primary mt-6">Call 7892766354</a> */}
         </div>
       </div>
     </section>

@@ -7,6 +7,7 @@ const {
   verifyWebhookSignature,
   checkoutOptions,
   isConfigured,
+  isEnabled,
   getMode,
   confirmGatewayPayment,
   summarizePayment,
@@ -16,11 +17,13 @@ const sign = (payload, secret) => crypto.createHmac('sha256', secret).update(pay
 
 beforeEach(() => {
   process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+  process.env.RAZORPAY_ALLOW_TEST = 'true';
   process.env.RAZORPAY_KEY_SECRET = 'test_secret';
   process.env.RAZORPAY_WEBHOOK_SECRET = 'webhook_secret';
 });
 afterAll(() => {
   delete process.env.RAZORPAY_KEY_ID;
+  delete process.env.RAZORPAY_ALLOW_TEST;
   delete process.env.RAZORPAY_KEY_SECRET;
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
 });
@@ -70,6 +73,18 @@ it('reports test or live mode from the key prefix', () => {
   expect(getMode()).toBe('live');
   delete process.env.RAZORPAY_KEY_SECRET;
   expect(getMode()).toBeNull();
+});
+
+it('enables online payments only for live keys unless test mode is allowed', () => {
+  delete process.env.RAZORPAY_ALLOW_TEST;
+  expect(isEnabled()).toBe(false);
+  process.env.RAZORPAY_ALLOW_TEST = 'true';
+  expect(isEnabled()).toBe(true);
+  delete process.env.RAZORPAY_ALLOW_TEST;
+  process.env.RAZORPAY_KEY_ID = 'rzp_live_abc';
+  expect(isEnabled()).toBe(true);
+  delete process.env.RAZORPAY_KEY_SECRET;
+  expect(isEnabled()).toBe(false);
 });
 
 describe('confirmGatewayPayment', () => {
