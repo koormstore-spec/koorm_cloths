@@ -134,3 +134,17 @@ it('shows the server message when review submission is rejected (e.g. not a veri
   fireEvent.click(screen.getByRole('button', { name: 'Post review' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('You can only review products you have ordered.');
 });
+
+it('disables sold-out sizes and caps quantity at the selected size’s stock', async () => {
+  api.get.mockResolvedValue({ data: { ...product, stock: 2, size_stock: { S: 0, M: 2 } } });
+  show();
+  await screen.findByRole('heading', { name: 'Linen shirt' });
+  expect(screen.getByRole('button', { name: 'S, sold out' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'M', exact: true }));
+  expect(screen.getByText('Only 2 left in size M')).toBeInTheDocument();
+  const increase = screen.getByRole('button', { name: 'Increase quantity' });
+  fireEvent.click(increase);
+  expect(increase).toBeDisabled();
+  fireEvent.click(screen.getAllByRole('button', { name: /Add to bag/ })[0]);
+  expect(addToCart).toHaveBeenCalledWith(2, 'M', 2);
+});

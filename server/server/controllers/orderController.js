@@ -6,6 +6,7 @@ const { isEnabled: onlinePaymentsEnabled, createGatewayOrder, checkoutOptions } 
 const { cancelOrderAndRefund, requestOrderCancellation, loadOrderForEmail } = require('../utils/orderLifecycle');
 const { refundOrder } = require('../utils/refunds');
 const { parsePaymentDetails } = require('../utils/paymentDetails');
+const { lineStockSql, sizeTrackedSql, loadSizeStock, takeStock } = require('../utils/sizeStock');
 
 const parseImages = (images) => {
   if (!images) return [];
@@ -26,16 +27,32 @@ const FREE_SHIPPING_THRESHOLD = 1999;
 const SHIPPING_FEE = 99;
 const PAYMENT_METHODS = ['COD', 'ONLINE'];
 
-// Checks the bag against stock. Different sizes of one product share its stock.
-const stockProblem = (cartRows, stockByProduct) => {
+// Checks the bag against stock. `stockOf(item)` returns { key, stock, size }:
+// products tracked per size are keyed by product + size; others share one
+// stock across all their sizes, keyed by product alone.
+const stockProblem = (cartRows, stockOf) => {
   const needed = new Map();
-  for (const item of cartRows) needed.set(item.product_id, (needed.get(item.product_id) || 0) + item.quantity);
-  for (const item of cartRows) {
-    const stock = Number(stockByProduct.get(item.product_id) ?? 0);
-    if (stock <= 0) return `${item.name} is out of stock`;
-    if (stock < needed.get(item.product_id)) return `Only ${stock} left in stock for ${item.name}`;
+  const lines = cartRows.map((item) => ({ item, ...stockOf(item) }));
+  for (const line of lines) needed.set(line.key, (needed.get(line.key) || 0) + line.item.quantity);
+  for (const { item, key, stock: rawStock, size } of lines) {
+    const stock = Number(rawStock ?? 0);
+    const label = size ? `${item.name} (size ${size})` : item.name;
+    if (stock <= 0) return `${label} is out of stock`;
+    if (stock < needed.get(key)) return `Only ${stock} left in stock for ${label}`;
   }
   return null;
+};
+
+// Stock as read with the cart (before locking).
+const cartLineStock = (item) => (Number(item.size_tracked)
+  ? { key: `${item.product_id}|${item.size}`, stock: item.stock, size: item.size }
+  : { key: String(item.product_id), stock: item.stock });
+
+// Stock as re-read under row locks.
+const lockedLineStock = (productStock, sizeStock) => (item) => {
+  const sizes = sizeStock.get(item.product_id);
+  if (sizes) return { key: `${item.product_id}|${item.size}`, stock: sizes[item.size] ?? 0, size: item.size };
+  return { key: String(item.product_id), stock: productStock.get(item.product_id) };
 };
 
 const createOrder = async (req, res) => {
@@ -61,7 +78,8 @@ const createOrder = async (req, res) => {
 
     const [cartRows] = await connection.query(
       `SELECT ci.id, ci.size, ci.quantity, p.id AS product_id, p.name, p.images,
-              COALESCE(p.discount_price, p.price) AS price, p.stock
+              COALESCE(p.discount_price, p.price) AS price,
+              ${lineStockSql('ci.size')} AS stock, ${sizeTrackedSql} AS size_tracked
        FROM cart_items ci JOIN products p ON ci.product_id = p.id
        WHERE ci.user_id = ?`,
       [req.user.id]
@@ -74,7 +92,7 @@ const createOrder = async (req, res) => {
 
     // Quick check for a clear message before any locking; repeated under
     // row locks inside the transaction below.
-    const earlyStockError = stockProblem(cartRows, new Map(cartRows.map((item) => [item.product_id, item.stock])));
+    const earlyStockError = stockProblem(cartRows, cartLineStock);
     if (earlyStockError) {
       connection.release();
       return res.status(400).json({ message: earlyStockError });
@@ -123,7 +141,11 @@ const createOrder = async (req, res) => {
     // Lock the products so two customers can't buy the last piece at once.
     const productIds = [...new Set(cartRows.map((item) => item.product_id))];
     const [lockedProducts] = await connection.query('SELECT id, stock FROM products WHERE id IN (?) FOR UPDATE', [productIds]);
-    const lockedStockError = stockProblem(cartRows, new Map((lockedProducts || []).map((product) => [product.id, product.stock])));
+    const lockedSizeStock = await loadSizeStock(connection, productIds, { lock: true });
+    const lockedStockError = stockProblem(cartRows, lockedLineStock(
+      new Map((lockedProducts || []).map((product) => [product.id, product.stock])),
+      lockedSizeStock
+    ));
     if (lockedStockError) {
       await connection.rollback();
       connection.release();
@@ -152,10 +174,7 @@ const createOrder = async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [orderId, item.product_id, item.name, images[0] || null, item.size, item.quantity, item.price]
       );
-      await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [
-        item.quantity,
-        item.product_id,
-      ]);
+      await takeStock(connection, item.product_id, item.size, item.quantity);
     }
 
     // Online orders keep the bag and the coupon count until payment succeeds.

@@ -82,6 +82,22 @@ describe('createOrder', () => {
     expect(connection.beginTransaction).not.toHaveBeenCalled();
   });
 
+  it('checks a per-size product against that size, counting two lines of the same size together', async () => {
+    const connection = makeConnection();
+    connection.query.mockResolvedValueOnce([[
+      { id: 1, size: 'M', quantity: 1, product_id: 9, name: 'Linen Shirt', images: '[]', price: 1899, stock: 1, size_tracked: 1 },
+      { id: 2, size: 'L', quantity: 3, product_id: 9, name: 'Linen Shirt', images: '[]', price: 1899, stock: 2, size_tracked: 1 },
+    ]]);
+    pool.getConnection.mockResolvedValueOnce(connection);
+    const res = mockRes();
+
+    await createOrder({ user: { id: 1 }, body: fullShippingBody() }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Only 2 left in stock for Linen Shirt (size L)' });
+    expect(connection.beginTransaction).not.toHaveBeenCalled();
+  });
+
   it('rejects with an out-of-stock message (not "insufficient") when stock has hit zero', async () => {
     const connection = makeConnection();
     connection.query.mockResolvedValueOnce([[
@@ -106,8 +122,10 @@ describe('createOrder', () => {
       ]]) // cart lookup
       .mockResolvedValueOnce([[{ id: 1 }]]) // lock customer for first-order eligibility
       .mockResolvedValueOnce([[{ id: 9, stock: 10 }]]) // lock products, re-check stock
+      .mockResolvedValueOnce([[]]) // per-size stock (none: shared stock)
       .mockResolvedValueOnce([{ insertId: 55 }]) // INSERT order
       .mockResolvedValueOnce([{}]) // INSERT order_items
+      .mockResolvedValueOnce([{}]) // UPDATE size stock
       .mockResolvedValueOnce([{}]) // UPDATE stock
       .mockResolvedValueOnce([{}]); // DELETE cart_items
     pool.getConnection.mockResolvedValueOnce(connection);
@@ -141,7 +159,9 @@ describe('createOrder', () => {
       ]])
       .mockResolvedValueOnce([[{ id: 1 }]]) // lock customer for first-order eligibility
       .mockResolvedValueOnce([[{ id: 9, stock: 10 }]]) // lock products, re-check stock
+      .mockResolvedValueOnce([[]]) // per-size stock (none: shared stock)
       .mockResolvedValueOnce([{ insertId: 56 }])
+      .mockResolvedValueOnce([{}])
       .mockResolvedValueOnce([{}])
       .mockResolvedValueOnce([{}])
       .mockResolvedValueOnce([{}]);
@@ -188,8 +208,10 @@ describe('createOrder', () => {
       }]]) // coupon lookup
       .mockResolvedValueOnce([[{ id: 1 }]]) // lock customer for first-order eligibility
       .mockResolvedValueOnce([[{ id: 9, stock: 10 }]]) // lock products, re-check stock
+      .mockResolvedValueOnce([[]]) // per-size stock (none: shared stock)
       .mockResolvedValueOnce([{ insertId: 60 }]) // INSERT order
       .mockResolvedValueOnce([{}]) // INSERT order_items
+      .mockResolvedValueOnce([{}]) // UPDATE size stock
       .mockResolvedValueOnce([{}]) // UPDATE stock
       .mockResolvedValueOnce([{}]) // DELETE cart_items
       .mockResolvedValueOnce([{}]); // UPDATE coupons used_count

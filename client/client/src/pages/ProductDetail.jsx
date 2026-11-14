@@ -98,6 +98,13 @@ export default function ProductDetail() {
   if (!product) return <p className="container-x py-20 text-center">Product not found.</p>;
 
   const outOfStock = Number(product.stock) === 0;
+  // Per-size stock when the product is set up that way; otherwise every size
+  // shares the product's stock.
+  const sizeStock = product.size_stock || {};
+  const tracksSizes = Object.keys(sizeStock).length > 0;
+  const stockForSize = (size) => (tracksSizes ? Number(sizeStock[size] ?? 0) : Number(product.stock));
+  const selectedStock = selectedSize ? stockForSize(selectedSize) : Number(product.stock);
+  const maxQty = Math.min(selectedStock, MAX_QUANTITY_PER_PRODUCT);
   const isWishlisted = wishlist?.some((item) => item.id === product.id);
   const hasDiscount = product.discount_price && Number(product.discount_price) < Number(product.price);
   const displayPrice = Number(product.discount_price || product.price);
@@ -135,10 +142,11 @@ export default function ProductDetail() {
 
           <div className="mt-6">
             <div className="mb-3 flex items-end justify-between"><div><p className="text-sm font-semibold">Select size</p><p className="mt-1 text-xs text-muted">Fits true to size</p></div><span className="text-xs text-muted link-underline">Size guide</span></div>
-            <div className="grid grid-cols-5 gap-2">{product.sizes.map((size) => <button key={size} aria-pressed={selectedSize === size} onClick={() => { setSelectedSize(size); setSizeNotice(0); setMessage(''); setCartError(''); }} className={`h-11 border text-xs font-semibold transition-all ${selectedSize === size ? 'border-ink bg-ink text-cream' : 'border-sand bg-white hover:border-ink'}`}>{size}</button>)}</div>
+            <div className="grid grid-cols-5 gap-2">{product.sizes.map((size) => { const soldOut = stockForSize(size) <= 0; return <button key={size} aria-pressed={selectedSize === size} disabled={soldOut} aria-label={soldOut ? `${size}, sold out` : undefined} title={soldOut ? 'Sold out' : undefined} onClick={() => { setSelectedSize(size); setQty((value) => Math.max(1, Math.min(value, stockForSize(size), MAX_QUANTITY_PER_PRODUCT))); setSizeNotice(0); setMessage(''); setCartError(''); }} className={`h-11 border text-xs font-semibold transition-all ${soldOut ? 'cursor-not-allowed border-sand bg-white text-muted line-through opacity-50' : selectedSize === size ? 'border-ink bg-ink text-cream' : 'border-sand bg-white hover:border-ink'}`}>{size}</button>; })}</div>
+            {tracksSizes && selectedSize && selectedStock > 0 && selectedStock <= 3 && <p className="mt-2 text-xs font-semibold text-accent">Only {selectedStock} left in size {selectedSize}</p>}
           </div>
 
-          <div className="mt-6 flex items-center gap-4"><div><p className="mb-2 text-[12px] font-bold uppercase tracking-[0.15em] text-muted">Quantity</p><div className="flex w-28 items-center border border-sand bg-white"><button onClick={() => setQty((value) => Math.max(1, value - 1))} className="flex h-10 flex-1 items-center justify-center hover:bg-cream" aria-label="Decrease quantity"><MinusIcon width={14} height={14} /></button><span className="flex-1 text-center text-sm font-semibold">{qty}</span><button onClick={() => setQty((value) => Math.min(Number(product.stock) || value, MAX_QUANTITY_PER_PRODUCT, value + 1))} disabled={qty >= Math.min(Number(product.stock), MAX_QUANTITY_PER_PRODUCT)} className="flex h-10 flex-1 items-center justify-center hover:bg-cream disabled:opacity-40" aria-label="Increase quantity"><PlusIcon width={14} height={14} /></button></div></div><button onClick={handleAddToCart} disabled={adding || outOfStock} className="btn-primary mt-6 flex-1">{outOfStock ? 'Currently unavailable' : adding ? 'Adding...' : 'Add to bag'} <span aria-hidden="true">&rarr;</span></button></div>
+          <div className="mt-6 flex items-center gap-4"><div><p className="mb-2 text-[12px] font-bold uppercase tracking-[0.15em] text-muted">Quantity</p><div className="flex w-28 items-center border border-sand bg-white"><button onClick={() => setQty((value) => Math.max(1, value - 1))} className="flex h-10 flex-1 items-center justify-center hover:bg-cream" aria-label="Decrease quantity"><MinusIcon width={14} height={14} /></button><span className="flex-1 text-center text-sm font-semibold">{qty}</span><button onClick={() => setQty((value) => Math.min(maxQty || value, value + 1))} disabled={qty >= maxQty} className="flex h-10 flex-1 items-center justify-center hover:bg-cream disabled:opacity-40" aria-label="Increase quantity"><PlusIcon width={14} height={14} /></button></div></div><button onClick={handleAddToCart} disabled={adding || outOfStock} className="btn-primary mt-6 flex-1">{outOfStock ? 'Currently unavailable' : adding ? 'Adding...' : 'Add to bag'} <span aria-hidden="true">&rarr;</span></button></div>
           
           {cartError && <p role="alert" className="mt-3 text-sm font-medium text-red-600">{cartError}</p>}
 

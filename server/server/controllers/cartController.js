@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { lineStockSql, sizeTrackedSql } = require('../utils/sizeStock');
 
 const parseImages = (images) => {
   if (!images) return [];
@@ -14,7 +15,7 @@ const getCart = async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT ci.id, ci.size, ci.quantity, p.id AS product_id, p.name, p.slug, p.price,
-              p.discount_price, p.images, p.stock
+              p.discount_price, p.images, ${lineStockSql('ci.size')} AS stock
        FROM cart_items ci
        JOIN products p ON ci.product_id = p.id
        WHERE ci.user_id = ?
@@ -33,14 +34,26 @@ const getCart = async (req, res) => {
 
 // Zero stock and "not enough left" are different situations for the
 // customer — distinguish them instead of a single generic error.
-const stockShortfallMessage = (stock, requestedQuantity, productName) => {
+const stockShortfallMessage = (stock, requestedQuantity, productName, size) => {
+  const label = size ? `${productName} (size ${size})` : productName;
+  stock = Number(stock);
   if (stock <= 0) {
-    return `${productName} is out of stock`;
+    return `${label} is out of stock`;
   }
   if (requestedQuantity > stock) {
-    return `Only ${stock} left in stock for ${productName}`;
+    return `Only ${stock} left in stock for ${label}`;
   }
   return null;
+};
+
+// Stock for one size of a product: its product_size_stock row when the
+// product is tracked per size, otherwise the shared products.stock.
+const stockForSize = async (productId, size) => {
+  const [rows] = await pool.query(
+    `SELECT p.name, ${lineStockSql('?')} AS stock, ${sizeTrackedSql} AS size_tracked FROM products p WHERE p.id = ?`,
+    [size, productId]
+  );
+  return rows[0] || null;
 };
 
 // A per-customer cap on how many of the same product can sit in one bag,
@@ -64,11 +77,11 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ message: 'quantity must be a whole number of at least 1' });
     }
 
-    const [products] = await pool.query('SELECT name, stock FROM products WHERE id = ?', [product_id]);
-    if (products.length === 0) {
+    const product = await stockForSize(product_id, String(size));
+    if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    const { name: productName, stock } = products[0];
+    const { name: productName, stock, size_tracked: sizeTracked } = product;
 
     const [existing] = await pool.query(
       'SELECT * FROM cart_items WHERE user_id = ? AND product_id = ? AND size = ?',
@@ -85,7 +98,7 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ message: limitError });
     }
 
-    const shortfall = stockShortfallMessage(stock, currentQuantity + quantity, productName);
+    const shortfall = stockShortfallMessage(stock, currentQuantity + quantity, productName, Number(sizeTracked) ? size : null);
     if (shortfall) {
       return res.status(400).json({ message: shortfall });
     }
@@ -115,7 +128,7 @@ const updateCartItem = async (req, res) => {
     }
 
     const [items] = await pool.query(
-      `SELECT ci.id, ci.product_id, p.name AS product_name, p.stock
+      `SELECT ci.id, ci.product_id, ci.size, p.name AS product_name, ${lineStockSql('ci.size')} AS stock, ${sizeTrackedSql} AS size_tracked
        FROM cart_items ci JOIN products p ON p.id = ci.product_id
        WHERE ci.id = ? AND ci.user_id = ?`,
       [req.params.id, req.user.id]
@@ -123,7 +136,7 @@ const updateCartItem = async (req, res) => {
     if (items.length === 0) {
       return res.status(404).json({ message: 'Cart item not found' });
     }
-    const { product_id: productId, product_name: productName, stock } = items[0];
+    const { product_id: productId, product_name: productName, size, stock, size_tracked: sizeTracked } = items[0];
 
     const [[{ otherQuantity }]] = await pool.query(
       'SELECT COALESCE(SUM(quantity), 0) AS otherQuantity FROM cart_items WHERE user_id = ? AND product_id = ? AND id != ?',
@@ -134,7 +147,7 @@ const updateCartItem = async (req, res) => {
       return res.status(400).json({ message: limitError });
     }
 
-    const shortfall = stockShortfallMessage(stock, quantity, productName);
+    const shortfall = stockShortfallMessage(stock, quantity, productName, Number(sizeTracked) ? size : null);
     if (shortfall) {
       return res.status(400).json({ message: shortfall });
     }

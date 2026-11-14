@@ -9,11 +9,20 @@ const { refundOrder, refundableBalance, httpError } = require('./refunds');
 // arrive in time the order is cancelled and the stock goes back on sale.
 const PENDING_PAYMENT_MINUTES = 30;
 
-const restockItems = (connection, orderId) => connection.query(
-  `UPDATE products p JOIN order_items oi ON oi.product_id = p.id
-   SET p.stock = p.stock + oi.quantity WHERE oi.order_id = ?`,
-  [orderId]
-);
+// Puts an order's items back: on their size (for products tracked per size)
+// and on the product total.
+const restockItems = async (connection, orderId) => {
+  await connection.query(
+    `UPDATE product_size_stock pss JOIN order_items oi ON oi.product_id = pss.product_id AND oi.size = pss.size
+     SET pss.stock = pss.stock + oi.quantity WHERE oi.order_id = ?`,
+    [orderId]
+  );
+  return connection.query(
+    `UPDATE products p JOIN order_items oi ON oi.product_id = p.id
+     SET p.stock = p.stock + oi.quantity WHERE oi.order_id = ?`,
+    [orderId]
+  );
+};
 
 // A coupon is counted when a COD order is placed or an online order is paid,
 // so it's handed back only in those cases.

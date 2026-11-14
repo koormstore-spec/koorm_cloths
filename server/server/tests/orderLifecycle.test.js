@@ -97,6 +97,11 @@ describe('cancelOrderAndRefund', () => {
     const result = await cancelOrderAndRefund(8, { initiatedBy: 'admin' });
     expect(updates(connection)[0][0]).toContain("cancellation_status = IF(cancellation_status = 'requested', 'approved', cancellation_status)");
     expect(ran(connection, 'p.stock + oi.quantity')).toHaveLength(1);
+    // The ordered size gets its units back too, matched on product + size.
+    const sizeRestock = ran(connection, 'pss.stock + oi.quantity');
+    expect(sizeRestock).toHaveLength(1);
+    expect(sizeRestock[0][0]).toContain('oi.size = pss.size');
+    expect(sizeRestock[0][1]).toEqual([8]);
     expect(result.refund.amount).toBe(1400);
   });
 

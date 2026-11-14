@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS products (
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
+-- Stock per size. products.stock is kept as the sum of a product's rows.
+-- A product with no rows here sells from products.stock across all sizes.
+CREATE TABLE IF NOT EXISTS product_size_stock (
+  product_id INT NOT NULL,
+  size VARCHAR(20) NOT NULL,
+  stock INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (product_id, size)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------- CART ----------
 CREATE TABLE IF NOT EXISTS cart_items (
   id INT AUTO_INCREMENT PRIMARY KEY,

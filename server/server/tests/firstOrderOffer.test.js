@@ -25,6 +25,7 @@ test.each([false, true])('coupon preview checks previous orders: %p', async hasP
 test.each([false, true])('checkout rechecks eligibility inside the transaction: %p', async hasPrevious => {
   const connection = { beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn(), query: jest.fn(async sql => {
     if (sql.includes('FROM cart_items')) return [[item]];
+    if (sql.includes('FROM product_size_stock')) return [[]];
     if (sql.includes('FROM coupons')) return [[coupon]];
     if (sql.includes('FROM users')) return [[{ id: user.id }]];
     if (sql.includes('FROM orders')) return [hasPrevious ? [{ id: 77 }] : []];

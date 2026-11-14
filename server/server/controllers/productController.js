@@ -1,5 +1,8 @@
 const { pool } = require('../config/db');
 const { orderModel } = require('../models');
+const {
+  attachSizeStock, normaliseSizeStock, saveSizeStock, pruneRemovedSizes, syncProductTotal,
+} = require('../utils/sizeStock');
 
 const parseProduct = (row) => {
   if (!row) return row;
@@ -125,8 +128,9 @@ const getProducts = async (req, res) => {
       params
     );
 
+    const products = await attachSizeStock(pool, rows.map(parseProduct));
     res.json({
-      products: rows.map(parseProduct),
+      products,
       total: countRows[0].total,
       page: pageNum,
       pages: Math.ceil(countRows[0].total / limitNum),
@@ -165,8 +169,9 @@ const getProductBySlug = async (req, res) => {
     // review — everyone else just doesn't see the review form at all.
     const canReview = req.user ? await orderModel.hasPurchasedProduct(req.user.id, rows[0].id) : false;
 
+    const [product] = await attachSizeStock(pool, [parseProduct(rows[0])]);
     res.json({
-      ...parseProduct(rows[0]),
+      ...product,
       reviews,
       related: related.map(parseProduct),
       can_review: canReview,
@@ -176,30 +181,63 @@ const getProductBySlug = async (req, res) => {
   }
 };
 
+const loadProductForAdmin = async (db, id) => {
+  const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
+  if (!rows.length) return null;
+  const [product] = await attachSizeStock(db, [parseProduct(rows[0])]);
+  return product;
+};
+
+// Runs `work` in a transaction on its own connection.
+const inTransaction = async (work) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const result = await work(connection);
+    await connection.commit();
+    return result;
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+};
+
 const createProduct = async (req, res) => {
   try {
     const {
       name, slug, description, price, discount_price, category_id,
-      brand, gender, sizes, colors, images, stock, is_featured,
+      brand, gender, sizes, colors, images, stock, is_featured, size_stock,
     } = req.body;
 
     if (!name || !slug || !price) {
       return res.status(400).json({ message: 'name, slug and price are required' });
     }
 
-    const [result] = await pool.query(
-      `INSERT INTO products
-       (name, slug, description, price, discount_price, category_id, brand, gender, sizes, colors, images, stock, is_featured)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        name, slug, description || '', price, discount_price || null, category_id || null,
-        brand || 'Koorm', gender || 'unisex',
-        JSON.stringify(sizes || []), JSON.stringify(colors || []), JSON.stringify(images || []),
-        stock ?? 100, is_featured ? 1 : 0,
-      ]
-    );
-    const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [result.insertId]);
-    res.status(201).json(parseProduct(rows[0]));
+    let sizeEntries = null;
+    if (size_stock !== undefined && size_stock !== null) {
+      const result = normaliseSizeStock(size_stock, sizes);
+      if (result.error) return res.status(400).json({ message: result.error });
+      sizeEntries = result.entries;
+    }
+
+    const productId = await inTransaction(async (connection) => {
+      const [result] = await connection.query(
+        `INSERT INTO products
+         (name, slug, description, price, discount_price, category_id, brand, gender, sizes, colors, images, stock, is_featured)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          name, slug, description || '', price, discount_price || null, category_id || null,
+          brand || 'Koorm', gender || 'unisex',
+          JSON.stringify(sizes || []), JSON.stringify(colors || []), JSON.stringify(images || []),
+          stock ?? 100, is_featured ? 1 : 0,
+        ]
+      );
+      if (sizeEntries) await saveSizeStock(connection, result.insertId, sizeEntries);
+      return result.insertId;
+    });
+    res.status(201).json(await loadProductForAdmin(pool, productId));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -214,46 +252,84 @@ const updateProduct = async (req, res) => {
     const current = existing[0][0];
     const {
       name, slug, description, price, discount_price, category_id,
-      brand, gender, sizes, colors, images, stock, is_featured,
+      brand, gender, sizes, colors, images, stock, is_featured, size_stock,
     } = req.body;
 
-    await pool.query(
-      `UPDATE products SET name=?, slug=?, description=?, price=?, discount_price=?, category_id=?,
-       brand=?, gender=?, sizes=?, colors=?, images=?, stock=?, is_featured=? WHERE id=?`,
-      [
-        name ?? current.name,
-        slug ?? current.slug,
-        description ?? current.description,
-        price ?? current.price,
-        discount_price ?? current.discount_price,
-        category_id ?? current.category_id,
-        brand ?? current.brand,
-        gender ?? current.gender,
-        sizes ? JSON.stringify(sizes) : current.sizes,
-        colors ? JSON.stringify(colors) : current.colors,
-        images ? JSON.stringify(images) : current.images,
-        stock ?? current.stock,
-        is_featured !== undefined ? (is_featured ? 1 : 0) : current.is_featured,
-        req.params.id,
-      ]
-    );
-    const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
-    res.json(parseProduct(rows[0]));
+    const finalSizes = sizes || parseProduct(current).sizes;
+    let sizeEntries = null;
+    if (size_stock !== undefined && size_stock !== null) {
+      const result = normaliseSizeStock(size_stock, finalSizes);
+      if (result.error) return res.status(400).json({ message: result.error });
+      sizeEntries = result.entries;
+    }
+
+    await inTransaction(async (connection) => {
+      await connection.query(
+        `UPDATE products SET name=?, slug=?, description=?, price=?, discount_price=?, category_id=?,
+         brand=?, gender=?, sizes=?, colors=?, images=?, stock=?, is_featured=? WHERE id=?`,
+        [
+          name ?? current.name,
+          slug ?? current.slug,
+          description ?? current.description,
+          price ?? current.price,
+          discount_price ?? current.discount_price,
+          category_id ?? current.category_id,
+          brand ?? current.brand,
+          gender ?? current.gender,
+          sizes ? JSON.stringify(sizes) : current.sizes,
+          colors ? JSON.stringify(colors) : current.colors,
+          images ? JSON.stringify(images) : current.images,
+          stock ?? current.stock,
+          is_featured !== undefined ? (is_featured ? 1 : 0) : current.is_featured,
+          req.params.id,
+        ]
+      );
+      if (sizeEntries) {
+        await saveSizeStock(connection, req.params.id, sizeEntries);
+      } else if (sizes) {
+        // Sizes changed without new per-size numbers: drop removed sizes and
+        // keep the total in step with what is left.
+        await pruneRemovedSizes(connection, req.params.id, sizes.map((size) => String(size).trim()));
+        await syncProductTotal(connection, req.params.id);
+      } else {
+        // A per-size product's total always comes from its sizes.
+        await syncProductTotal(connection, req.params.id);
+      }
+    });
+    res.json(await loadProductForAdmin(pool, req.params.id));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+// Body: { size_stock: { S: 4, M: 0 } } for per-size products, or { stock } for
+// products that haven't been set up per size.
 const updateProductStock = async (req, res) => {
-  const { stock } = req.body;
-  if (typeof stock !== 'number' || !Number.isInteger(stock) || stock < 0 || stock > 2147483647) {
+  const { stock, size_stock } = req.body;
+  if (size_stock === undefined
+    && (typeof stock !== 'number' || !Number.isInteger(stock) || stock < 0 || stock > 2147483647)) {
     return res.status(400).json({ message: 'Stock must be a whole number between 0 and 2147483647.' });
   }
   try {
-    await pool.query('UPDATE products SET stock = ? WHERE id = ?', [stock, req.params.id]);
     const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ message: 'Product not found' });
-    res.json(parseProduct(rows[0]));
+    const product = parseProduct(rows[0]);
+
+    if (size_stock !== undefined) {
+      const result = normaliseSizeStock(size_stock, product.sizes);
+      if (result.error) return res.status(400).json({ message: result.error });
+      await inTransaction((connection) => saveSizeStock(connection, product.id, result.entries));
+      return res.json(await loadProductForAdmin(pool, product.id));
+    }
+
+    const [[{ tracked }]] = await pool.query(
+      'SELECT COUNT(*) AS tracked FROM product_size_stock WHERE product_id = ?', [product.id]
+    );
+    if (Number(tracked) > 0) {
+      return res.status(400).json({ message: 'This product tracks stock per size. Set the units for each size instead.' });
+    }
+    await pool.query('UPDATE products SET stock = ? WHERE id = ?', [stock, product.id]);
+    res.json(await loadProductForAdmin(pool, product.id));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -261,7 +337,10 @@ const updateProductStock = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    await inTransaction(async (connection) => {
+      await connection.query('DELETE FROM product_size_stock WHERE product_id = ?', [req.params.id]);
+      await connection.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    });
     res.json({ message: 'Product deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -1,4 +1,4 @@
-﻿jest.mock('../config/db', () => ({ pool: { query: jest.fn() } }));
+﻿jest.mock('../config/db', () => ({ pool: { query: jest.fn(), getConnection: jest.fn() } }));
 const { pool } = require('../config/db');
 const { getProducts, getProductFilters, updateProductStock, getProductBySlug } = require('../controllers/productController');
 
@@ -63,15 +63,62 @@ test.each([-1, 1.5, null, '2', 2147483648])('rejects invalid stock %p without wr
 
 test('updates only stock, retaining the product details in the response', async () => {
   const product = { id: 1, name: 'Linen Shirt', price: 2499, stock: 2, sizes: '["M"]', colors: '["White"]', images: '["/photo.jpg"]' };
-  pool.query.mockResolvedValueOnce([{ affectedRows: 1 }]).mockResolvedValueOnce([[product]]);
+  pool.query
+    .mockResolvedValueOnce([[product]]) // product lookup
+    .mockResolvedValueOnce([[{ tracked: 0 }]]) // not tracked per size
+    .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE
+    .mockResolvedValueOnce([[product]]) // reload
+    .mockResolvedValueOnce([[]]); // per-size stock
   const res = response();
   await updateProductStock({ body: { stock: 2 }, params: { id: '1' } }, res);
-  expect(pool.query.mock.calls[0]).toEqual(['UPDATE products SET stock = ? WHERE id = ?', [2, '1']]);
-  expect(res.json).toHaveBeenCalledWith({ ...product, sizes: ['M'], colors: ['White'], images: ['/photo.jpg'] });
+  expect(pool.query.mock.calls[2]).toEqual(['UPDATE products SET stock = ? WHERE id = ?', [2, 1]]);
+  expect(res.json).toHaveBeenCalledWith({ ...product, sizes: ['M'], colors: ['White'], images: ['/photo.jpg'], size_stock: {} });
+});
+
+test('refuses a single stock number for a product tracked per size', async () => {
+  const product = { id: 1, name: 'Linen Shirt', stock: 6, sizes: '["S","M"]' };
+  pool.query.mockResolvedValueOnce([[product]]).mockResolvedValueOnce([[{ tracked: 2 }]]);
+  const res = response();
+  await updateProductStock({ body: { stock: 2 }, params: { id: '1' } }, res);
+  expect(res.status).toHaveBeenCalledWith(400);
+  expect(pool.query.mock.calls.some(([sql]) => sql.startsWith('UPDATE'))).toBe(false);
+});
+
+test.each([
+  [{ S: 1 }, 'Enter a whole number of units, zero or more, for size M.'],
+  [{ S: 1, M: -2 }, 'Enter a whole number of units, zero or more, for size M.'],
+  [{ S: 1, M: 1.5 }, 'Enter a whole number of units, zero or more, for size M.'],
+  [{ S: 1, M: 2, XL: 3 }, "Size XL is not one of this product's sizes."],
+])('rejects invalid per-size stock %p', async (sizeStock, message) => {
+  pool.query.mockResolvedValueOnce([[{ id: 1, sizes: '["S","M"]' }]]);
+  const res = response();
+  await updateProductStock({ body: { size_stock: sizeStock }, params: { id: '1' } }, res);
+  expect(res.status).toHaveBeenCalledWith(400);
+  expect(res.json).toHaveBeenCalledWith({ message });
+  expect(pool.getConnection).not.toHaveBeenCalled();
+});
+
+test('saves stock per size in a transaction and syncs the product total', async () => {
+  const product = { id: 1, name: 'Linen Shirt', stock: 0, sizes: '["S","M"]', colors: '[]', images: '[]' };
+  const connection = { query: jest.fn().mockResolvedValue([{}]), beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn() };
+  pool.getConnection.mockResolvedValueOnce(connection);
+  pool.query
+    .mockResolvedValueOnce([[product]])
+    .mockResolvedValueOnce([[{ ...product, stock: 7 }]])
+    .mockResolvedValueOnce([[{ product_id: 1, size: 'S', stock: 3 }, { product_id: 1, size: 'M', stock: 4 }]]);
+  const res = response();
+  await updateProductStock({ body: { size_stock: { S: 3, M: 4 } }, params: { id: '1' } }, res);
+  const sqls = connection.query.mock.calls;
+  expect(sqls[0]).toEqual(['DELETE FROM product_size_stock WHERE product_id = ? AND size NOT IN (?)', [1, ['S', 'M']]]);
+  expect(sqls.filter(([sql]) => sql.startsWith('INSERT INTO product_size_stock')).map(([, params]) => params)).toEqual([[1, 'S', 3], [1, 'M', 4]]);
+  expect(sqls[sqls.length - 1][0]).toContain('SET p.stock = s.total');
+  expect(connection.commit).toHaveBeenCalled();
+  expect(connection.release).toHaveBeenCalled();
+  expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ stock: 7, size_stock: { S: 3, M: 4 } }));
 });
 
 test('reports a missing product when saving stock', async () => {
-  pool.query.mockResolvedValueOnce([{ affectedRows: 0 }]).mockResolvedValueOnce([[]]);
+  pool.query.mockResolvedValueOnce([[]]);
   const res = response();
   await updateProductStock({ body: { stock: 2 }, params: { id: '999' } }, res);
   expect(res.status).toHaveBeenCalledWith(404);
@@ -98,16 +145,19 @@ test('combines catalogue filters and applies the same conditions to pagination t
 const productRow = { id: 2, slug: 'linen-shirt', name: 'Linen Shirt', price: 2499, category_id: 1, sizes: '["M"]', colors: '["White"]', images: '["/photo.jpg"]' };
 
 test('marks can_review false for an anonymous visitor without checking purchase history', async () => {
-  pool.query.mockResolvedValueOnce([[productRow]]).mockResolvedValueOnce([[]]).mockResolvedValueOnce([[]]);
+  pool.query.mockResolvedValueOnce([[productRow]]).mockResolvedValueOnce([[]]).mockResolvedValueOnce([[]])
+    .mockResolvedValueOnce([[{ product_id: 2, size: 'M', stock: 0 }]]); // per-size stock
   const res = response();
   await getProductBySlug({ params: { slug: 'linen-shirt' } }, res);
-  expect(pool.query).toHaveBeenCalledTimes(3);
+  expect(pool.query).toHaveBeenCalledTimes(4);
+  expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ size_stock: { M: 0 } }));
   expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ can_review: false }));
 });
 
 test('marks can_review true for a signed-in customer who ordered this product', async () => {
   pool.query.mockResolvedValueOnce([[productRow]]).mockResolvedValueOnce([[]]).mockResolvedValueOnce([[]])
-    .mockResolvedValueOnce([[{ id: 9 }]]); // hasPurchasedProduct -> ordered
+    .mockResolvedValueOnce([[{ id: 9 }]]) // hasPurchasedProduct -> ordered
+    .mockResolvedValueOnce([[]]); // per-size stock
   const res = response();
   await getProductBySlug({ params: { slug: 'linen-shirt' }, user: { id: 3 } }, res);
   expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ can_review: true }));
@@ -115,7 +165,8 @@ test('marks can_review true for a signed-in customer who ordered this product', 
 
 test('marks can_review false for a signed-in customer who never ordered this product', async () => {
   pool.query.mockResolvedValueOnce([[productRow]]).mockResolvedValueOnce([[]]).mockResolvedValueOnce([[]])
-    .mockResolvedValueOnce([[]]); // hasPurchasedProduct -> not ordered
+    .mockResolvedValueOnce([[]]) // hasPurchasedProduct -> not ordered
+    .mockResolvedValueOnce([[]]); // per-size stock
   const res = response();
   await getProductBySlug({ params: { slug: 'linen-shirt' }, user: { id: 3 } }, res);
   expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ can_review: false }));
